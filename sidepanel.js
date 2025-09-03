@@ -106,26 +106,22 @@ class SidePanelManager {
         this.imageUpload.addEventListener('change', (e) => {
             this.handleImageUpload(e.target.files[0]);
         });
-
         this.translateUploadBtn.addEventListener('click', () => {
             this.translateUploadedImage();
         });
 
         // Drag and drop
         const uploadArea = document.querySelector('.upload-area');
-
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             uploadArea.classList.add('dragover');
         });
-
         uploadArea.addEventListener('dragleave', (e) => {
             e.preventDefault();
             if (!uploadArea.contains(e.relatedTarget)) {
                 uploadArea.classList.remove('dragover');
             }
         });
-
         uploadArea.addEventListener('drop', (e) => {
             e.preventDefault();
             uploadArea.classList.remove('dragover');
@@ -150,237 +146,130 @@ class SidePanelManager {
         });
     }
 
-    async saveSettings() {
-        const settings = {
-            geminiApiKey: this.geminiApiKey.value,
-            visionApiKey: this.visionApiKey.value, // Lưu Vision API Key
-            autoTranslate: this.autoTranslateToggle.checked,
-            showOriginal: this.showOriginalToggle.checked,
-            sourceLanguage: this.sourceLanguageSelect.value,
-            targetLanguage: this.targetLanguageSelect.value
-        };
-
-        try {
-            await chrome.storage.sync.set(settings);
-            this.showStatus('Cài đặt đã được lưu!', 'success');
-        } catch (error) {
-            this.showStatus('Lỗi khi lưu cài đặt: ' + error.message, 'error');
-        }
-    }
-
-    validateApiKeys() {
-        const geminiKey = this.geminiApiKey.value.trim();
-        const visionKey = this.visionApiKey.value.trim();
-
-        // Validate Gemini Key
-        if (!geminiKey) {
-            this.updateApiStatus('apiStatus', 'Chưa có API key', 'invalid');
-            this.testApiBtn.disabled = true;
-        } else if (!geminiKey.startsWith('AIza')) {
-            this.updateApiStatus('apiStatus', 'API key không đúng định dạng Gemini', 'invalid');
-            this.testApiBtn.disabled = true;
-        } else if (geminiKey.length < 35) {
-            this.updateApiStatus('apiStatus', 'API key quá ngắn', 'invalid');
-            this.testApiBtn.disabled = true;
-        } else {
-            this.updateApiStatus('apiStatus', 'API key hợp lệ', 'valid');
-            this.testApiBtn.disabled = false;
-        }
-
-        // Validate Vision Key
-        if (!visionKey) {
-            this.updateApiStatus('visionApiStatus', 'Chưa có Vision API key', 'info');
-            this.testVisionApiBtn.disabled = true;
-        } else if (!visionKey.startsWith('AIza')) {
-            this.updateApiStatus('visionApiStatus', 'API key không đúng định dạng Vision', 'invalid');
-            this.testVisionApiBtn.disabled = true;
-        } else if (visionKey.length < 35) {
-            this.updateApiStatus('visionApiStatus', 'API key quá ngắn', 'invalid');
-            this.testVisionApiBtn.disabled = true;
-        } else {
-            this.updateApiStatus('visionApiStatus', 'API key hợp lệ', 'valid');
-            this.testVisionApiBtn.disabled = false;
-        }
-    }
-
-    updateApiStatus(elementId, message, type) {
-        const element = document.getElementById(elementId);
-        element.textContent = message;
-        element.className = `api-status ${type}`;
-    }
-
-    // Đổi tên hàm cũ để phù hợp
-    async testApiKey() {
-        const apiKey = this.geminiApiKey.value.trim();
-        if (!apiKey) return;
-
-        this.updateApiStatus('apiStatus', 'Đang kiểm tra...', 'testing');
-        this.testApiBtn.disabled = true;
-
-        try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: 'Test message' }] }] })
-            });
-
-            if (response.ok) {
-                this.updateApiStatus('apiStatus', 'API key hợp lệ!', 'valid');
-            } else {
-                const errorData = await response.json();
-                this.updateApiStatus('apiStatus', `Lỗi: ${errorData.error.message}`, 'invalid');
-            }
-        } catch (error) {
-            this.updateApiStatus('apiStatus', `Lỗi kết nối: ${error.message}`, 'invalid');
-        } finally {
-            this.testApiBtn.disabled = false;
-        }
-    }
-
-    async testVisionApiKey() {
-        const apiKey = this.visionApiKey.value.trim();
-        if (!apiKey) return;
-
-        this.updateApiStatus('visionApiStatus', 'Đang kiểm tra...', 'testing');
-        this.testVisionApiBtn.disabled = true;
-
-        try {
-            const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    requests: [{
-                        image: { content: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwAB/q9A9LIAAAAASUVORK5CYII=' }, // Dummy 1x1 image
-                        features: [{ type: 'TEXT_DETECTION' }]
-                    }]
-                })
-            });
-
-            if (response.ok) {
-                this.updateApiStatus('visionApiStatus', 'API key hợp lệ!', 'valid');
-            } else {
-                const errorData = await response.json();
-                this.updateApiStatus('visionApiStatus', `Lỗi: ${errorData.error.message}`, 'invalid');
-            }
-        } catch (error) {
-            this.updateApiStatus('visionApiStatus', `Lỗi kết nối: ${error.message}`, 'invalid');
-        } finally {
-            this.testVisionApiBtn.disabled = false;
-        }
-    }
-
-    handleImageUpload(file) {
-        if (!file || !file.type.startsWith('image/')) {
-            this.showStatus('Vui lòng chọn file ảnh hợp lệ', 'error');
+    // Add this to your class
+    async translateUploadedImage() {
+        if (!this.uploadedImage) {
+            this.showStatus('Vui lòng chọn một file ảnh.', 'error');
             return;
         }
 
+        this.showStatus('Đang phân tích và dịch ảnh...', 'info');
+        this.translateUploadBtn.disabled = true;
+
+        try {
+            const imageDataUrl = await new Promise(resolve => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.readAsDataURL(this.uploadedImage);
+            });
+
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (!tab) {
+                this.showStatus('Không thể tìm thấy tab đang hoạt động để gửi yêu cầu.', 'error');
+                return;
+            }
+
+            const translatedData = await new Promise((resolve, reject) => {
+                chrome.tabs.sendMessage(tab.id, {
+                    action: 'translateUploadedImage',
+                    imageData: imageDataUrl,
+                    sourceLanguage: this.sourceLanguageSelect.value,
+                    targetLanguage: this.targetLanguageSelect.value
+                }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        return reject(chrome.runtime.lastError);
+                    }
+                    if (response.error) {
+                        return reject(new Error(response.error));
+                    }
+                    resolve(response);
+                });
+            });
+
+            if (translatedData.length > 0) {
+                this.showStatus('Dịch thành công!', 'success');
+                this.showTranslatedImage(imageDataUrl, translatedData);
+            } else {
+                this.showStatus('Không tìm thấy văn bản trong ảnh.', 'info');
+                this.showOriginalImage(imageDataUrl);
+            }
+
+        } catch (error) {
+            this.showStatus('Lỗi khi dịch ảnh: ' + error.message, 'error');
+        } finally {
+            this.translateUploadBtn.disabled = false;
+        }
+    }
+
+    // Add this to your class
+    showTranslatedImage(imageDataUrl, translatedData) {
+        this.previewContainer.innerHTML = '';
+        const wrapper = document.createElement('div');
+        wrapper.className = 'translated-image-wrapper';
+        wrapper.style.position = 'relative';
+
+        const img = new Image();
+        img.src = imageDataUrl;
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+
+        wrapper.appendChild(img);
+        this.previewContainer.appendChild(wrapper);
+
+        // Chờ ảnh load để tính toán tỷ lệ
+        img.onload = () => {
+            const naturalWidth = img.naturalWidth;
+            const naturalHeight = img.naturalHeight;
+            const displayWidth = img.offsetWidth;
+            const displayHeight = img.offsetHeight;
+
+            const scaleX = displayWidth / naturalWidth;
+            const scaleY = displayHeight / naturalHeight;
+
+            translatedData.forEach(item => {
+                const bbox = item.bbox;
+                const translatedText = item.translatedText;
+
+                const overlayText = document.createElement('div');
+                overlayText.className = 'translated-text-overlay';
+                overlayText.style.position = 'absolute';
+                overlayText.style.left = `${bbox.x0 * scaleX}px`;
+                overlayText.style.top = `${bbox.y0 * scaleY}px`;
+                overlayText.style.width = `${(bbox.x1 - bbox.x0) * scaleX}px`;
+                overlayText.style.height = `${(bbox.y1 - bbox.y0) * scaleY}px`;
+                overlayText.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                overlayText.style.color = 'white';
+                overlayText.style.fontSize = '12px';
+                overlayText.style.padding = '2px';
+                overlayText.style.textAlign = 'center';
+                overlayText.style.display = 'flex';
+                overlayText.style.alignItems = 'center';
+                overlayText.style.justifyContent = 'center';
+                overlayText.style.boxSizing = 'border-box';
+                overlayText.textContent = translatedText;
+                overlayText.style.wordWrap = 'break-word';
+                overlayText.style.overflow = 'hidden';
+
+                wrapper.appendChild(overlayText);
+            });
+        };
+    }
+
+    // Existing functions (handleImageUpload, validateApiKeys, etc.)
+    handleImageUpload(file) {
+        this.uploadedImage = file;
+        this.translateUploadBtn.disabled = false;
+        this.showStatus(`Đã chọn ảnh: ${file.name}`, 'info');
+
         const reader = new FileReader();
         reader.onload = (e) => {
-            const img = document.createElement('img');
-            img.src = e.target.result;
-            this.previewContainer.innerHTML = '';
-            this.previewContainer.appendChild(img);
-            this.uploadedImage = e.target.result;
-            this.translateUploadBtn.disabled = false;
+            this.previewContainer.innerHTML = `<img src="${e.target.result}" alt="Preview" style="max-width: 100%; height: auto; display: block;">`;
         };
         reader.readAsDataURL(file);
     }
 
-    async translateUploadedImage() {
-        if (!this.uploadedImage) {
-            this.showStatus('Vui lòng tải ảnh lên trước.', 'error');
-            return;
-        }
-
-        const settings = await chrome.storage.sync.get(['visionApiKey', 'targetLanguage']);
-        const visionApiKey = settings.visionApiKey;
-        const targetLanguage = settings.targetLanguage;
-
-        if (!visionApiKey) {
-            this.showStatus('Vui lòng nhập Vision API Key để dịch ảnh.', 'error');
-            return;
-        }
-
-        this.showStatus('Đang xử lý ảnh, vui lòng chờ...', 'info');
-        this.translateUploadBtn.disabled = true;
-
-        try {
-            const result = await chrome.runtime.sendMessage({
-                action: 'translateUploadedImage',
-                imageData: this.uploadedImage,
-                visionApiKey: visionApiKey,
-                targetLanguage: targetLanguage
-            });
-
-            if (result.error) {
-                throw new Error(result.error);
-            }
-
-            this.showStatus('Dịch ảnh thành công!', 'success');
-            // Open new window to display result
-            const newWindow = window.open('', '_blank');
-            newWindow.document.write(this.generateResultHtml(this.uploadedImage, result.translations));
-            newWindow.document.close();
-
-        } catch (error) {
-            this.showStatus('Đã xảy ra lỗi khi dịch ảnh: ' + error.message, 'error');
-        } finally {
-            this.translateUploadBtn.disabled = false;
-        }
-    }
-
-    generateResultHtml(imageUrl, translations) {
-        const translationsHtml = translations.map(t => `
-            <div class="translation-item">
-                <div class="original-text">Gốc: ${t.original}</div>
-                <div class="translated-text">Dịch: ${t.translated}</div>
-            </div>
-        `).join('');
-
-        return `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="utf-8">
-                <title>Kết quả dịch ảnh</title>
-                <style>
-                    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f5f5f5; }
-                    .container { background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); padding: 30px; }
-                    .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; }
-                    .image-container { text-align: center; margin-bottom: 20px; }
-                    .result-image { max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #ddd; }
-                    .translation-item { border-bottom: 1px solid #eee; padding: 10px 0; }
-                    .translation-item:last-child { border-bottom: none; }
-                    .original-text { font-weight: bold; color: #555; }
-                    .translated-text { color: #1a1a1a; margin-top: 5px; }
-                    .footer { text-align: center; margin-top: 30px; font-size: 0.9em; color: #999; }
-                    .download-btn { display: inline-block; margin-top: 20px; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; transition: background-color 0.3s; }
-                    .download-btn:hover { background-color: #0056b3; }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <div class="header">
-                        <h2>Kết quả dịch ảnh</h2>
-                        <p>Ảnh đã được phân tích và dịch bằng AI</p>
-                    </div>
-                    <div class="image-container">
-                        <img src="${imageUrl}" alt="Translated Image" class="result-image">
-                    </div>
-                    ${translationsHtml}
-                    <div class="download-section">
-                        <a href="${imageUrl}" download="gemini_translated_image.png" class="download-btn">
-                            📥 Tải ảnh đã dịch
-                        </a>
-                    </div>
-                    <div class="footer">
-                        <p>Được dịch bởi Google Gemini 2.0 Flash - Image Translator Extension</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-        `;
+    showOriginalImage(imageDataUrl) {
+        this.previewContainer.innerHTML = `<img src="${imageDataUrl}" alt="Original Image" style="max-width: 100%; height: auto; display: block;">`;
     }
 
     showStatus(message, type) {
@@ -397,21 +286,109 @@ class SidePanelManager {
         }
     }
 
-    downloadResults() {
-        const translations = Array.from(document.querySelectorAll('.translation-item')).map(item => {
-            const original = item.querySelector('div:first-child').textContent.replace('Gốc: ', '');
-            const translated = item.querySelector('div:nth-child(2)').textContent.replace('Dịch: ', '');
-            return { original, translated };
+    async testApiKey() {
+        const apiKey = this.geminiApiKey.value.trim();
+        if (!apiKey) {
+            this.apiStatus.textContent = 'Vui lòng nhập API Key';
+            this.apiStatus.className = 'api-status invalid';
+            return;
+        }
+        this.apiStatus.textContent = 'Đang kiểm tra...';
+        this.apiStatus.className = 'api-status testing';
+
+        try {
+            const response = await chrome.runtime.sendMessage({
+                action: 'testGeminiApiKey',
+                apiKey: apiKey
+            });
+            if (response.isValid) {
+                this.apiStatus.textContent = 'Gemini API Key hợp lệ!';
+                this.apiStatus.className = 'api-status valid';
+            } else {
+                this.apiStatus.textContent = 'Gemini API Key không hợp lệ.';
+                this.apiStatus.className = 'api-status invalid';
+            }
+        } catch (error) {
+            this.apiStatus.textContent = `Lỗi: ${error.message}`;
+            this.apiStatus.className = 'api-status invalid';
+        }
+    }
+
+    async testVisionApiKey() {
+        const apiKey = this.visionApiKey.value.trim();
+        if (!apiKey) {
+            this.visionApiStatus.textContent = 'Vui lòng nhập API Key';
+            this.visionApiStatus.className = 'api-status invalid';
+            return;
+        }
+        this.visionApiStatus.textContent = 'Đang kiểm tra...';
+        this.visionApiStatus.className = 'api-status testing';
+        try {
+            // Test with a small dummy image
+            const testImage = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+            const response = await fetch(
+                `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', },
+                    body: JSON.stringify({ requests: [{ image: { content: testImage }, features: [{ type: 'TEXT_DETECTION' }] }] }),
+                }
+            );
+            if (response.ok) {
+                this.visionApiStatus.textContent = 'Vision API Key hợp lệ!';
+                this.visionApiStatus.className = 'api-status valid';
+            } else {
+                const errorData = await response.json();
+                this.visionApiStatus.textContent = `Vision API Key không hợp lệ. Lỗi: ${errorData.error.message}`;
+                this.visionApiStatus.className = 'api-status invalid';
+            }
+        } catch (error) {
+            this.visionApiStatus.textContent = `Lỗi: ${error.message}`;
+            this.visionApiStatus.className = 'api-status invalid';
+        }
+    }
+
+    saveSettings() {
+        const settings = {
+            geminiApiKey: this.geminiApiKey.value.trim(),
+            visionApiKey: this.visionApiKey.value.trim(),
+            autoTranslate: this.autoTranslateToggle.checked,
+            showOriginal: this.showOriginalToggle.checked,
+            sourceLanguage: this.sourceLanguageSelect.value,
+            targetLanguage: this.targetLanguageSelect.value
+        };
+        chrome.storage.sync.set(settings, () => {
+            this.showStatus('Đã lưu cài đặt.', 'success');
+            // Gửi message đến background để thông báo thay đổi settings
+            chrome.runtime.sendMessage({
+                action: 'saveSettings',
+                settings: settings
+            });
         });
+    }
 
-        const dataStr = JSON.stringify(translations, null, 2);
-        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-        const exportFileDefaultName = `gemini_translations_${new Date().toISOString().slice(0,10)}.json`;
+    toggleAutoTranslate() {
+        const enabled = this.autoTranslateToggle.checked;
+        chrome.runtime.sendMessage({ action: 'toggleAutoTranslate', enabled: enabled });
+    }
 
-        const linkElement = document.createElement('a');
-        linkElement.setAttribute('href', dataUri);
-        linkElement.setAttribute('download', exportFileDefaultName);
-        linkElement.click();
+    saveCurrentState() {
+        const currentState = {
+            uploadedImage: this.uploadedImage ? this.uploadedImage.name : null,
+            previewHtml: this.previewContainer.innerHTML
+        };
+        sessionStorage.setItem('sidePanelState', JSON.stringify(currentState));
+    }
+
+    restoreState() {
+        const savedState = sessionStorage.getItem('sidePanelState');
+        if (savedState) {
+            const state = JSON.parse(savedState);
+            this.previewContainer.innerHTML = state.previewHtml;
+            // Note: Cannot restore the File object directly, need to re-handle
+            // For now, just restore the preview HTML
+            this.uploadedImage = null; // Reset uploaded image
+            this.translateUploadBtn.disabled = !this.previewContainer.innerHTML.includes('img');
+        }
     }
 }
 

@@ -119,26 +119,16 @@ class GeminiBackgroundService {
                             <h1>🎉 Chào mừng đến với Image Translator!</h1>
                             <p>Extension dịch ảnh bằng Google Gemini 2.0 Flash</p>
                         </div>
-                        
                         <div class="step">
                             <h3>Bước 1: Lấy API Key từ Google AI Studio</h3>
                             <p>1. Truy cập <a href="https://aistudio.google.com/app/apikey" target="_blank" class="api-link">Google AI Studio</a></p>
                             <p>2. Đăng nhập với tài khoản Google</p>
                             <p>3. Nhấn "Create API Key" và sao chép key</p>
                         </div>
-                        
                         <div class="step">
                             <h3>Bước 2: Cấu hình Extension</h3>
                             <p>1. Nhấn vào icon Extension trên thanh công cụ</p>
-                            <p>2. Dán API Key vào ô "Cấu hình API Key"</p>
-                            <p>3. Nhấn "Test API Key" để kiểm tra</p>
-                        </div>
-                        
-                        <div class="step">
-                            <h3>Bước 3: Sử dụng</h3>
-                            <p>• Bật "Tự động dịch ảnh" để dịch tất cả ảnh trên trang</p>
-                            <p>• Hoặc tải ảnh lên trong popup để dịch riêng lẻ</p>
-                            <p>• Chuột phải vào ảnh → "Dịch ảnh với Gemini AI"</p>
+                            <p>2. Dán API Key vào ô "Gemini API Key"</p>
                         </div>
                     </body>
                     </html>
@@ -147,301 +137,17 @@ class GeminiBackgroundService {
         }
     }
 
-    async handleMessage(message, sender, sendResponse) {
-        try {
-            switch (message.action) {
-                case 'translateWithGemini':
-                    const result = await this.translateWithGemini(message.text, message.sourceLang, message.targetLang, message.apiKey);
-                    sendResponse({ success: true, translatedText: result });
-                    break;
-
-                case 'translateImageDirectly':
-                    const imageResult = await this.translateImageWithGemini(
-                        message.imageData,
-                        message.sourceLang,
-                        message.targetLang,
-                        message.apiKey
-                    );
-                    sendResponse(imageResult);
-                    break;
-
-                case 'testGeminiConnection':
-                    const testResult = await this.testGeminiConnection(message.apiKey);
-                    sendResponse(testResult);
-                    break;
-
-                case 'getSettings':
-                    const settings = await this.getSettings();
-                    sendResponse({ success: true, settings });
-                    break;
-
-                case 'saveSettings':
-                    await this.saveSettings(message.settings);
-                    sendResponse({ success: true });
-                    break;
-
-                default:
-                    sendResponse({ success: false, error: 'Unknown action: ' + message.action });
-            }
-        } catch (error) {
-            console.error('Error handling message:', error);
-            sendResponse({ success: false, error: error.message });
-        }
-    }
-
-    async translateWithGemini(text, sourceLang, targetLang, apiKey) {
-        if (!apiKey) {
-            throw new Error('Không có API key');
-        }
-
-        const prompt = this.createTranslationPrompt(text, sourceLang, targetLang);
-
-        try {
-            const response = await fetch(`${this.geminiEndpoint}?key=${apiKey}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{
-                            text: prompt
-                        }]
-                    }],
-                    generationConfig: {
-                        temperature: 0.1,
-                        maxOutputTokens: 1000,
-                    }
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error?.message || `HTTP ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-                throw new Error('Gemini không trả về kết quả hợp lệ');
-            }
-
-            return data.candidates[0].content.parts[0].text.trim();
-
-        } catch (error) {
-            console.error('Gemini translation error:', error);
-            throw error;
-        }
-    }
-
-    async translateImageWithGemini(imageData, sourceLang, targetLang, apiKey) {
-        if (!apiKey) {
-            return { success: false, error: 'Không có API key' };
-        }
-
-        try {
-            // Chuyển đổi data URL thành base64
-            const base64Data = imageData.split(',')[1];
-
-            const prompt = this.createImageTranslationPrompt(sourceLang, targetLang);
-
-            const response = await fetch(`${this.geminiEndpoint}?key=${apiKey}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [
-                            {
-                                text: prompt
-                            },
-                            {
-                                inline_data: {
-                                    mime_type: "image/jpeg",
-                                    data: base64Data
-                                }
-                            }
-                        ]
-                    }],
-                    generationConfig: {
-                        temperature: 0.1,
-                        maxOutputTokens: 2000,
-                    }
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error?.message || `HTTP ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-                throw new Error('Gemini không trả về kết quả hợp lệ');
-            }
-
-            const result = data.candidates[0].content.parts[0].text;
-
-            // Parse JSON response từ Gemini
-            try {
-                const parsedResult = JSON.parse(result);
-                return {
-                    success: true,
-                    result: parsedResult
-                };
-            } catch (parseError) {
-                // Nếu không parse được JSON, trả về text thô
-                return {
-                    success: true,
-                    result: {
-                        texts: [{
-                            original: "Văn bản được tìm thấy",
-                            translated: result,
-                            confidence: "medium",
-                            orientation: "horizontal"
-                        }]
-                    }
-                };
-            }
-
-        } catch (error) {
-            console.error('Gemini image translation error:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    createTranslationPrompt(text, sourceLang, targetLang) {
-        const sourceLanguageName = this.getLanguageName(sourceLang);
-        const targetLanguageName = this.getLanguageName(targetLang);
-
-        return `Dịch văn bản sau từ ${sourceLanguageName} sang ${targetLanguageName}. Chỉ trả về bản dịch, không giải thích:
-
-"${text}"`;
-    }
-
-    createImageTranslationPrompt(sourceLang, targetLang) {
-        const sourceLanguageName = this.getLanguageName(sourceLang);
-        const targetLanguageName = this.getLanguageName(targetLang);
-
-        return `Phân tích hình ảnh này và tìm tất cả văn bản trong ảnh. Dịch tất cả văn bản từ ${sourceLanguageName} sang ${targetLanguageName}.
-
-Trả về kết quả theo định dạng JSON chính xác như sau:
-{
-  "texts": [
-    {
-      "original": "văn bản gốc tìm thấy",
-      "translated": "bản dịch tiếng ${targetLanguageName}",
-      "confidence": "high/medium/low",
-      "orientation": "horizontal/vertical"
-    }
-  ]
-}
-
-Lưu ý:
-- Nếu không tìm thấy văn bản nào, trả về {"texts": []}
-- Dịch chính xác và tự nhiên
-- Xác định độ tin cậy: high (rất rõ ràng), medium (khá rõ), low (mờ/khó đọc)
-- Xác định hướng: horizontal (ngang), vertical (dọc)`;
-    }
-
-    getLanguageName(langCode) {
-        const langNames = {
-            'auto': 'tự động nhận diện',
-            'vi': 'tiếng Việt',
-            'en': 'tiếng Anh',
-            'zh': 'tiếng Trung',
-            'ja': 'tiếng Nhật',
-            'ko': 'tiếng Hàn',
-            'th': 'tiếng Thái',
-            'es': 'tiếng Tây Ban Nha',
-            'fr': 'tiếng Pháp',
-            'de': 'tiếng Đức'
-        };
-        return langNames[langCode] || langCode;
-    }
-
-    async testGeminiConnection(apiKey) {
-        try {
-            const result = await this.translateWithGemini('Hello', 'en', 'vi', apiKey);
-            return {
-                success: true,
-                message: 'API key hoạt động tốt!',
-                testTranslation: result
-            };
-        } catch (error) {
-            return {
-                success: false,
-                error: error.message
-            };
-        }
-    }
-
     async handleContextMenuClick(info, tab) {
-        try {
-            switch (info.menuItemId) {
-                case 'translateImageGemini':
-                    await this.translateImageFromContext(info, tab);
-                    break;
-
-                case 'toggleAutoTranslate':
-                    await this.toggleAutoTranslateFromContext(tab);
-                    break;
-
-                case 'openSidePanel':
-                    // Mở side panel
-                    await chrome.sidePanel.open({ windowId: tab.windowId });
-                    break;
-            }
-        } catch (error) {
-            console.error('Error handling context menu click:', error);
+        if (info.menuItemId === 'translateImageGemini' && info.srcUrl) {
+            this.translateImageFromUrl(info.srcUrl, tab);
+        } else if (info.menuItemId === 'toggleAutoTranslate') {
+            this.toggleAutoTranslate(tab);
         }
-    }
-
-    async translateImageFromContext(info, tab) {
-        if (!info.srcUrl) return;
-
-        const settings = await this.getSettings();
-        if (!settings.geminiApiKey) {
-            // Hiển thị notification yêu cầu setup API key
-            chrome.notifications.create({
-                type: 'basic',
-                iconUrl: 'icon48.png',
-                title: 'Image Translator',
-                message: 'Vui lòng cấu hình Gemini API key trước khi sử dụng!'
-            });
-            return;
-        }
-
-        await chrome.tabs.sendMessage(tab.id, {
-            action: 'translateSpecificImage',
-            imageUrl: info.srcUrl,
-            apiKey: settings.geminiApiKey,
-            sourceLang: settings.sourceLanguage,
-            targetLang: settings.targetLanguage
-        });
-    }
-
-    async toggleAutoTranslateFromContext(tab) {
-        const settings = await this.getSettings();
-        const newState = !settings.autoTranslate;
-
-        await this.saveSettings({ ...settings, autoTranslate: newState });
-
-        chrome.contextMenus.update('toggleAutoTranslate', {
-            title: newState ? 'Tắt tự động dịch ảnh' : 'Bật tự động dịch ảnh'
-        });
-
-        await chrome.tabs.sendMessage(tab.id, {
-            action: 'toggleAutoTranslate',
-            enabled: newState
-        });
     }
 
     async handleTabUpdate(tabId, tab) {
-        const settings = await this.getSettings();
-        if (settings.autoTranslate && settings.geminiApiKey && tab.url && !tab.url.startsWith('chrome://')) {
+        if (tab.url.startsWith('http')) {
+            // Inject content script if not already present
             try {
                 await chrome.tabs.sendMessage(tabId, { action: 'ping' });
             } catch {
@@ -457,6 +163,113 @@ Lưu ý:
                     files: ['content.css']
                 });
             }
+        }
+    }
+
+    async handleMessage(message, sender, sendResponse) {
+        try {
+            switch (message.action) {
+                case 'testGeminiApiKey':
+                    const isValid = await this.testGeminiApiKey(message.apiKey);
+                    sendResponse({ isValid });
+                    break;
+                case 'testVisionApiKey':
+                    // We don't need to test Vision API here, it's handled in content.js
+                    // But we can add a placeholder for future use
+                    sendResponse({ isValid: true });
+                    break;
+                case 'translateTextWithGemini':
+                    const translatedText = await this.translateTextWithGemini(
+                        message.text,
+                        message.targetLanguage
+                    );
+                    sendResponse({ translatedText });
+                    break;
+                case 'translateImageFromUrl':
+                    const result = await this.translateImageFromUrl(message.srcUrl, sender.tab);
+                    sendResponse(result);
+                    break;
+                case 'getSettings':
+                    const settings = await this.getSettings();
+                    sendResponse(settings);
+                    break;
+                case 'saveSettings':
+                    await this.saveSettings(message.settings);
+                    sendResponse({ success: true });
+                    break;
+                case 'toggleAutoTranslate':
+                    this.toggleAutoTranslate(sender.tab);
+                    sendResponse({ success: true });
+                    break;
+                default:
+                    sendResponse({ error: 'Unknown action' });
+            }
+        } catch (error) {
+            console.error('Error in background script:', error);
+            sendResponse({ error: error.message });
+        }
+    }
+
+    async testGeminiApiKey(apiKey) {
+        const endpoint = `${this.geminiEndpoint}?key=${apiKey}`;
+        const testPrompt = {
+            contents: [{
+                parts: [{
+                    text: 'test'
+                }]
+            }]
+        };
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(testPrompt),
+            });
+            return response.ok;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    async translateTextWithGemini(text, targetLang) {
+        const settings = await this.getSettings();
+        if (!settings.geminiApiKey) {
+            throw new Error('Gemini API key is not set.');
+        }
+
+        const endpoint = `${this.geminiEndpoint}?key=${settings.geminiApiKey}`;
+        const prompt = `Translate the following text into ${targetLang} while maintaining original formatting and line breaks, if any. If the text is already in ${targetLang}, return the original text.: ${text}`;
+
+        const requestBody = {
+            contents: [{
+                parts: [{
+                    text: prompt
+                }]
+            }]
+        };
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`);
+            }
+
+            const data = await response.json();
+            const translatedText = data.candidates[0]?.content?.parts[0]?.text;
+            return translatedText;
+        } catch (error) {
+            console.error('Error calling Gemini API:', error);
+            throw error;
         }
     }
 
@@ -487,6 +300,21 @@ Lưu ý:
             } catch {
                 // Tab không có content script
             }
+        }
+    }
+
+    async toggleAutoTranslate(tab) {
+        const settings = await this.getSettings();
+        const newSetting = !settings.autoTranslate;
+        await this.saveSettings({ ...settings, autoTranslate: newSetting });
+
+        try {
+            await chrome.tabs.sendMessage(tab.id, {
+                action: 'toggleAutoTranslate',
+                enabled: newSetting
+            });
+        } catch (error) {
+            console.error('Error toggling auto-translate in content script:', error);
         }
     }
 }
