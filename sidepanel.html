@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Image Translator - Gemini AI</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 20px 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h2 {
+            font-size: 1.4rem;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 20px 16px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 1px solid #e1e5e9;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .api-section {
+            border: 2px solid #4CAF50;
+            margin-bottom: 15px; /* Added to separate API sections */
+        }
+
+        .api-section.invalid {
+            border-color: #f44336;
+            background: #fff8f8;
+        }
+
+        .api-input-group {
+            position: relative;
+            margin-bottom: 12px;
+        }
+
+        .api-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .api-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+
+        .api-status {
+            font-size: 12px;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+
+        .api-status.valid {
+            color: #4CAF50;
+        }
+
+        .api-status.invalid {
+            color: #f44336;
+        }
+
+        .api-status.testing {
+            color: #FF9800;
+        }
+
+        .test-btn {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .test-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+        }
+
+        .test-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 12px 0;
+            padding: 8px 0;
+        }
+
+        .toggle-switch span {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #4CAF50;
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px #4CAF50;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #4CAF50;
+            background: #eafaea;
+        }
+
+        .upload-area p {
+            margin: 0;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .preview-container {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .preview-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+
+        .translate-btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .translate-btn:hover {
+            background-color: #45a049;
+        }
+
+        .translate-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .status.info {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px 0;
+            font-size: 0.8rem;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Image Translator</h2>
+        <p>AI Gemini 2.0 Flash</p>
+    </div>
+
+    <div class="content">
+        <div class="section api-section" id="apiSection">
+            <div class="section-title">✨ Khóa API Gemini</div>
+            <div class="api-input-group">
+                <input type="password" id="geminiApiKey" class="api-input" placeholder="Nhập khóa API Gemini">
+            </div>
+            <div id="apiStatus" class="api-status"></div>
+            <button class="test-btn" id="testApiBtn" disabled>🧪 Kiểm tra API</button>
+        </div>
+
+        <div class="section api-section" id="visionApiSection">
+            <div class="section-title">🔑 Khóa Vision API</div>
+            <div class="api-input-group">
+                <input type="password" id="visionApiKey" class="api-input" placeholder="Nhập khóa Vision API (Tùy chọn)">
+            </div>
+            <div id="visionApiStatus" class="api-status"></div>
+            <button class="test-btn" id="testVisionApiBtn" disabled>🧪 Kiểm tra Vision API</button>
+        </div>
+
+        <div class="section">
+            <div class="section-title">⚙️ Cài đặt chung</div>
+            <div class="toggle-switch">
+                <span>Tự động dịch ảnh trên web</span>
+                <label class="switch">
+                    <input type="checkbox" id="autoTranslate">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="toggle-switch">
+                <span>Ẩn văn bản gốc</span>
+                <label class="switch">
+                    <input type="checkbox" id="showOriginal">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="language-selection">
+                <p>Ngôn ngữ nguồn:</p>
+                <select id="sourceLanguage">
+                    <option value="auto">Tự động phát hiện</option>
+                    <option value="en">English</option>
+                    <option value="zh">Chinese (中文)</option>
+                    <option value="ja">Japanese (日本語)</option>
+                    <option value="ko">Korean (한국어)</option>
+                    <option value="vi">Tiếng Việt</option>
+                    <option value="th">Thai (ไทย)</option>
+                </select>
+                <p style="margin-top: 15px;">Ngôn ngữ đích:</p>
+                <select id="targetLanguage">
+                    <option value="vi">🇻🇳 Tiếng Việt</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="zh">🇨🇳 Chinese (中文)</option>
+                    <option value="ja">🇯🇵 Japanese (日本語)</option>
+                    <option value="ko">🇰🇷 Korean (한국어)</option>
+                    <option value="th">🇹🇭 Thai (ไทย)</option>
+                    <option value="es">🇪🇸 Spanish</option>
+                    <option value="fr">🇫🇷 French</option>
+                    <option value="de">🇩🇪 German</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">📤 Tải ảnh lên để dịch</div>
+            <div class="upload-area">
+                <p>Nhấn để tải ảnh hoặc kéo thả ảnh vào đây</p>
+                <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+            </div>
+            <div class="preview-container" id="previewContainer">
+                </div>
+            <button class="translate-btn" id="translateUploadBtn" disabled>
+                🤖 Dịch ảnh với Gemini AI
+            </button>
+        </div>
+
+        <div id="status" class="status" style="display: none;"></div>
+    </div>
+
+    <div class="footer">
+        <p>Image Translator Extension v2.0<br>
+        Powered by Google Gemini 2.0 Flash</p>
+    </div>
+
+    <script src="sidepanel.js"></script>
+</body>
+</html>

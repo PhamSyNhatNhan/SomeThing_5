@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Image Translator - Gemini AI",
+  "version": "2.0",
+  "description": "Dịch văn bản trong ảnh bằng Google Gemini 2.0 Flash AI",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "contextMenus",
+    "notifications",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*",
+    "https://generativelanguage.googleapis.com/*",
+    "https://vision.googleapis.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Image Translator - Gemini AI"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["*.js", "*.css", "*.png", "*.json"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "minimum_chrome_version": "114"
+}
