@@ -1,8 +1,6 @@
 let enabled = true
 let auto = false
-let autoError = false
 let minImageSize = 100
-let credits = null
 let contextMenuPos = null
 let takeScreenshot = false
 let screencropping = false
@@ -90,6 +88,11 @@ function handleScrollDuringEdit(e) {
 document.addEventListener('wheel', handleScrollDuringEdit, { passive: false, capture: true })
 document.addEventListener('touchmove', handleScrollDuringEdit, { passive: false, capture: true })
 
+
+if (window.location.host == "toriitranslate.com" || window.location.host == "torii-image-translator.firebaseapp.com") {
+    enabled = false
+}
+
 setInterval(() => {
     chrome.runtime.sendMessage({ type: "keep-alive" }).then((response) => { })
 }, 2000)
@@ -111,7 +114,7 @@ setInterval(async () => {
 
 setInterval(() => {
     try {
-        if (auto && credits !== null && !autoError) {
+        if (auto) {
             const images = document.getElementsByTagName("img")
             const canvases = document.getElementsByTagName("canvas")
 
@@ -146,8 +149,7 @@ setInterval(() => {
             }
         }
     } catch (error) {
-        sendError(error, "setInterval auto from: " + window.location.href)
-
+        console.error("Error in auto translation interval: ", error)
         turnOffAuto()
     }
 }, 1000)
@@ -185,19 +187,6 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
             toriiLocation = newValue
         }
     }
-})
-
-chrome.runtime.sendMessage({ type: "user", sender: "content" }).then((response) => {
-    if (response.success) {
-        const baseCredits = response.content.credits || 0
-        const subscriptionCredits = response.content?.subscription?.credits || 0
-
-        credits = Number(baseCredits) + Number(subscriptionCredits)
-
-        updateCredits(credits)
-    }
-}).catch((error) => {
-    sendError(error, "user")
 })
 
 function contextMenuImage(pos) {
@@ -244,16 +233,11 @@ function contextMenuImage(pos) {
             contextMenuClick(targetElement)
         }
     } catch (error) {
-        sendError(error, "contextmenu_screenshot")
+        console.error("Error in contextMenuImage: ", error)
     }
 }
 
 function contextMenuScreencrop(from) {
-    if (credits === null) {
-        showError("Please log in with the extension from the popup. Go to your browser's extension menu.", null)
-        return
-    }
-
     screencropping = true
 
     chrome.runtime.sendMessage({ type: "screenshot" }).then((response) => {
@@ -540,7 +524,7 @@ function contextMenuScreencrop(from) {
                         }).catch((error) => {
                             showError("Failed to process image.", null)
 
-                            sendError(error, "contextmenu_screencrop_translate")
+                            console.error("Error in screencrop translate: ", error)
 
                             toriiScreenImage.remove()
                             toriiCropRect.remove()
@@ -611,24 +595,17 @@ function contextMenuScreencrop(from) {
 
                 document.onkeydown = null
 
-                sendError(error, "contextmenu_screencrop")
+                console.error("Error in contextMenuScreencrop: ", error)
             }
         } else {
             showError("Failed to take a screenshot.", null)
-
             screencropping = false
-
-            sendError(response.content.error, "contextmenu_screencrop")
+            console.error("Failed to take screenshot: ", response.content.error)
         }
     })
 }
 
 function contextMenuScreencropRepeat(boundingBox) {
-    if (credits === null) {
-        showError("Please log in with the extension from the popup. Go to your browser's extension menu.", null)
-        return
-    }
-
     if (!lastScreencropRect) {
         showError("Please take a normal screen crop first.", null)
         return
@@ -799,7 +776,7 @@ function contextMenuScreencropRepeat(boundingBox) {
                             screencropping = false
                         }).catch((error) => {
                             showError("Failed to process image.", null)
-                            sendError(error, "repeat_screencrop_translate")
+                            console.error("Error in repeat screencrop translate: ", error)
                             toriiCroppedImageWrapper.remove()
                             screencropping = false
                         })
@@ -809,7 +786,7 @@ function contextMenuScreencropRepeat(boundingBox) {
 
                     } catch (error) {
                         showError("Failed to process the bounding box.", null)
-                        sendError(error, "repeat_screencrop_process")
+                        console.error("Error processing bounding box: ", error)
                         screencropping = false
                         toriiScreenImage.remove()
                     }
@@ -817,17 +794,17 @@ function contextMenuScreencropRepeat(boundingBox) {
 
             } catch (error) {
                 showError("Something went wrong. Please contact support.", null)
-                sendError(error, "repeat_screencrop")
+                console.error("Error in repeat_screencrop: ", error)
                 screencropping = false
             }
         } else {
             showError("Failed to take a screenshot.", null)
-            sendError(response.content.error, "repeat_screencrop")
+            console.error("Failed to take screenshot in repeat: ", response.content.error)
             screencropping = false
         }
     }).catch((error) => {
         showError("Failed to communicate with extension.", null)
-        sendError(error, "repeat_screencrop_message")
+        console.error("Error sending message for repeat screencrop: ", error)
         screencropping = false
     })
 }
@@ -865,16 +842,12 @@ function contextMenuEdit(pos) {
             showError("No image found.", null)
         }
     } catch (error) {
-        sendError(error, "contextmenu_edit")
+        console.error("Error in contextMenuEdit: ", error)
     }
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    if (msg.type == "credits") {
-        credits = Number(msg.content.credits || 0)
-
-        updateCredits(credits)
-    } else if (msg.type.includes("command")) {
+    if (msg.type.includes("command")) {
         const command = msg.type.split("_")[1]
 
         if (command == "translate" || command == "screenshot") {
@@ -914,32 +887,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                         targetToriiAutoIcon.classList.remove("torii-rotating")
                     }
                 } catch (error) {
-                    sendError(error, "show error remove auto")
+                    console.error("Error toggling auto icon: ", error)
                 }
             }
         }
     }
 })
-
-function updateCredits(credits) {
-    for (const [targetElement, toriiData] of toriiTargets) {
-        if (!toriiData.active) continue
-
-        try {
-            toriiData.toriiCredits.innerText = formatCredits(credits)
-        } catch (error) {
-            sendError(error, "updateCredits")
-        }
-    }
-}
-
-function sendError(error, loc) {
-    chrome.runtime.sendMessage({ type: "error", message: error?.message || error, stack: error?.stack || "nothing", loc: loc }).then((response) => {
-        console.log("Send error response: ", response)
-    }).catch((error) => {
-        console.log("Send error error: ", error)
-    })
-}
 
 function handleMouseMove(e) {
     cursorPos.x = e.clientX || (e.targetTouches && e.targetTouches[0].clientX)
@@ -955,7 +908,7 @@ function handleMouseMove(e) {
             targetElement = getSubimage(targetElement, { x: cursorPos.x, y: cursorPos.y })
         }
     } catch (error) {
-        sendError(error, "mousemove_subimage from: " + window.location.href)
+        console.error("Error in getSubimage during mousemove: ", error)
     }
 
     try {
@@ -974,8 +927,7 @@ function handleMouseMove(e) {
         }
 
         showError("Something went wrong. Please contact support.", targetElement)
-
-        sendError(error, "mousemove_create from: " + window.location.href)
+        console.error("Error creating Torii on mousemove: ", error)
     }
 
     try {
@@ -984,7 +936,7 @@ function handleMouseMove(e) {
 
             const rect = toriiTarget.getBoundingClientRect()
 
-            const toriiClassExceptions = ["torii", "torii-icon", "torii-credits", "torii-notification", "torii-auto", "torii-auto-icon", "torii-utility", "torii-sub-utility", "torii-download", "torii-download-icon", "torii-edit", "torii-edit-icon"]
+            const toriiClassExceptions = ["torii", "torii-icon", "torii-notification", "torii-auto", "torii-auto-icon", "torii-utility", "torii-sub-utility", "torii-download", "torii-download-icon", "torii-edit", "torii-edit-icon"]
             const topElement = e.composedPath()[0]
             const isToriiClass = toriiClassExceptions.some((className) => topElement.classList && topElement.classList.contains(className))
 
@@ -997,7 +949,7 @@ function handleMouseMove(e) {
             }
         }
     } catch (error) {
-        sendError(error, "mousemove_remove from: " + window.location.href)
+        console.error("Error removing Torii on mousemove: ", error)
     }
 }
 
@@ -1128,7 +1080,7 @@ function contextMenuOpen(pos) {
                         targetToriiAutoIcon.classList.remove("torii-rotating")
                     }
                 } catch (error) {
-                    sendError(error, "show error remove auto")
+                    console.error("Error toggling auto icon from menu: ", error)
                 }
             }
         }, 150)
@@ -1293,7 +1245,7 @@ function screenshot(targetElement) {
                             return reject("Failed to take screenshot")
                         }
                     } catch (error) {
-                        sendError(error, "screenshot from: " + window.location.href)
+                        console.error("Error in screenshot capture: ", error)
 
                         try {
                             if (torii) torii.style.display = "flex"
@@ -1310,8 +1262,7 @@ function screenshot(targetElement) {
 
             setTimeout(captureAndScroll, 100)
         } catch (error) {
-            sendError(error, "screenshot from: " + window.location.href)
-
+            console.error("Error in screenshot function: ", error)
             try {
                 if (torii) torii.style.display = "flex"
             } catch (error) {
@@ -1462,11 +1413,6 @@ function createTorii(targetElement, withClick) {
         toriiIcon.style.width = `${toriiSize}px`
         toriiIcon.style.height = `${toriiSize}px`
 
-        const toriiCredits = document.createElement("div")
-        toriiCredits.classList.add("torii-credits")
-        toriiCredits.title = "Amount of credits left"
-        toriiCredits.innerText = formatCredits(credits)
-
         const toriiNotification = document.createElement("div")
         toriiNotification.classList.add("torii-notification")
 
@@ -1484,7 +1430,6 @@ function createTorii(targetElement, withClick) {
         toriiAuto.appendChild(toriiAutoIcon)
         toriiAuto.addEventListener("pointerup", () => {
             auto = !auto
-            autoError = false
 
             for (const [targetElement, toriiData] of toriiTargets) {
                 if (!toriiData.active) continue
@@ -1537,7 +1482,6 @@ function createTorii(targetElement, withClick) {
 
         const toriiUtility = document.createElement("div")
         toriiUtility.classList.add("torii-utility")
-        toriiUtility.appendChild(toriiCredits)
         toriiUtility.appendChild(toriiSubUtility)
         toriiUtility.style.left = `${toriiSize / 1.4}px`
 
@@ -1556,7 +1500,6 @@ function createTorii(targetElement, withClick) {
                 e.stopImmediatePropagation()
                 e.preventDefault()
 
-                autoError = false
                 toriiClick(targetElement)
             },
             true
@@ -1565,7 +1508,6 @@ function createTorii(targetElement, withClick) {
         addHoverListener(toriiIcon, toriiUtility)
         addHoverListener(toriiUtility, toriiIcon)
         addScaleListener(toriiAuto)
-        addScaleListener(toriiCredits)
         addScaleListener(toriiDownload)
         addScaleListener(toriiEdit)
 
@@ -1584,7 +1526,6 @@ function createTorii(targetElement, withClick) {
             toriiAuto: toriiAuto,
             toriiAutoIcon: toriiAutoIcon,
             toriiUtility: toriiUtility,
-            toriiCredits: toriiCredits,
             toriiNotification: toriiNotification,
             toriiDownload: toriiDownload,
             toriiDownloadIcon: toriiDownloadIcon,
@@ -1603,13 +1544,13 @@ function createTorii(targetElement, withClick) {
             textObjectsTemp: null
         })
 
-        if (withClick && !autoError) {
+        if (withClick) {
             click(toriiIcon)
         }
 
         toriiObserver.observe()
     } catch (error) {
-        sendError(error, "createTorii from: " + window.location.href + " withClick: " + withClick)
+        console.error("Error in createTorii: ", error)
     }
 }
 
@@ -1689,16 +1630,7 @@ function removeHoverClass(toriiElement, ...attachedElements) {
     }
 }
 
-function formatCredits(credits) {
-    if (credits === null) return "N/A"
-    return credits.toFixed(0)
-}
-
 async function editImage(targetElement) {
-    if (credits === null) {
-        showError("Please log in with the extension from the popup. Go to your browser's extension menu.", targetElement)
-    }
-
     let toriiData = toriiTargets.get(targetElement)
 
     try {
@@ -3180,7 +3112,7 @@ async function editImage(targetElement) {
                         await inpaintImage(data)
                         isInpainting = false
                     }).catch(error => {
-                        sendError(error, "stopDrawing")
+                        console.error("Error in stopDrawing inpaint:", error)
                         showGeneralError("Failed to inpaint image.")
                         maskContext.clearRect(0, 0, maskCanvas.width, maskCanvas.height)
                         redrawCanvas(true, false)
@@ -3742,7 +3674,7 @@ async function editImage(targetElement) {
         }, 500)
     } catch (error) {
         isEditing = false
-        sendError(error, "editImage")
+        console.error("Error in editImage: ", error)
 
         showError("Failed to edit image.", null, false)
 
@@ -3784,13 +3716,11 @@ function downloadImages(targetElement) {
                 a.remove()
             }).catch((error) => {
                 showError("Failed to download image.", targetElement)
-
-                sendError(error, "downloadImages single")
+                console.error("Error downloading single image: ", error)
             })
         } catch (error) {
             showError("Failed to download image.", targetElement)
-
-            sendError(error, "downloadImages single")
+            console.error("Error downloading single image: ", error)
         }
     } else {
         try {
@@ -3827,8 +3757,7 @@ function downloadImages(targetElement) {
                     jszip.file(filename, translatedUrl.split(",")[1], { base64: true })
                 }).catch((error) => {
                     showError("Failed to download image.", targetElement)
-
-                    sendError(error, "downloadImages")
+                    console.error("Error downloading multiple images (single promise): ", error)
                 }))
             }
 
@@ -3841,18 +3770,15 @@ function downloadImages(targetElement) {
                     a.remove()
                 }).catch((error) => {
                     showError("Failed to download images.", targetElement)
-
-                    sendError(error, "downloadImages")
+                    console.error("Error generating zip: ", error)
                 })
             }).catch((error) => {
                 showError("Failed to download images.", targetElement)
-
-                sendError(error, "downloadImages")
+                console.error("Error in promise.all for download: ", error)
             })
         } catch (error) {
             showError("Failed to download images.", targetElement)
-
-            sendError(error, "downloadImages")
+            console.error("Error downloading multiple images: ", error)
         }
     }
 }
@@ -3864,136 +3790,69 @@ async function toriiClick(targetElement) {
         if (toriiData) {
             const toriiIcon = toriiData.toriiIcon
 
-            if (credits !== null) {
-                if (toriiData.toriiState == "translated") {
-                    if (targetElement.nodeName.toLowerCase() == "img") {
-                        targetElement.src = toriiTargets.get(targetElement).originalURL
-                        if (targetElement.srcset) {
-                            targetElement.srcset = toriiTargets.get(targetElement).originalURL
-                        }
+            if (toriiData.toriiState == "translated") {
+                if (targetElement.nodeName.toLowerCase() == "img") {
+                    targetElement.src = toriiTargets.get(targetElement).originalURL
+                    if (targetElement.srcset) {
+                        targetElement.srcset = toriiTargets.get(targetElement).originalURL
+                    }
+                    hashElement(targetElement).then((hash) => {
+                        toriiData.toriiHash = hash
+                    })
+                } else if (targetElement.nodeName.toLowerCase() == "canvas") {
+                    const newImg = document.createElement("img")
+                    const context = targetElement.getContext("2d")
+
+                    newImg.onload = () => {
+                        context.drawImage(newImg, 0, 0, targetElement.width, targetElement.height)
+
                         hashElement(targetElement).then((hash) => {
                             toriiData.toriiHash = hash
                         })
-                    } else if (targetElement.nodeName.toLowerCase() == "canvas") {
-                        const newImg = document.createElement("img")
-                        const context = targetElement.getContext("2d")
-
-                        newImg.onload = () => {
-                            context.drawImage(newImg, 0, 0, targetElement.width, targetElement.height)
-
-                            hashElement(targetElement).then((hash) => {
-                                toriiData.toriiHash = hash
-                            })
-                        }
-
-                        newImg.src = toriiTargets.get(targetElement).originalURL
                     }
 
-                    toriiData.toriiState = "original"
-                    toriiData.toriiDownload.style.display = "none"
-                    toriiData.toriiEdit.style.display = "none"
-
-                    toriiIcon.classList.remove("torii-pulsing")
-                    toriiIcon.classList.add("torii-scaling")
-                } else if (toriiData.toriiState == "original" || toriiData.toriiState == "error") {
-                    if (toriiData.toriiState == "error") {
-                        clearError(targetElement)
-                    }
-
-                    removeExtraSources(targetElement)
-
-                    toriiIcon.classList.add("torii-loading")
-                    toriiIcon.classList.remove("torii-scaling")
-
-                    let targetUrl = null
-
-                    try {
-                        targetUrl = await getTargetUrl(targetElement)
-                    } catch (error) {
-                        toriiIcon.classList.remove("torii-loading")
-                        toriiIcon.classList.add("torii-scaling")
-
-                        if (error == "Auto and screenshot are not supported at the same time.") {
-                            turnOffAuto()
-                            takeScreenshot = false
-
-                            return
-                        }
-
-                        const fromScreenshot = error?.message?.includes?.("screenshot") || error?.includes?.("screenshot")
-
-                        showError(fromScreenshot ? "Failed to take a screenshot." : "Failed to process image.", targetElement)
-
-                        sendError(error?.message ? error : { message: error, stack: "none" }, "toriiClick from: " + window.location.href)
-
-                        return
-                    }
-
-                    const actionType = toriiData.toriiState == "screenshoting" ? "screenshot_normal" : "normal_click"
-                    toriiData.toriiState = "awaiting"
-                    let arrayBuffer = null
-
-                    try {
-                        if (targetUrl) {
-                            const response = await fetch(targetUrl, {
-                                headers: {
-                                    "Referer": window.location.href,
-                                    "User-Agent": window.navigator.userAgent
-                                }
-                            })
-
-                            if (response && response.ok) {
-                                const responseBlob = await response.blob()
-                                const buffer = await responseBlob.arrayBuffer()
-                                arrayBuffer = Array.from(new Uint8Array(buffer))
-                            }
-                        }
-                    } catch (error) {
-                        arrayBuffer = null
-                    }
-
-                    executePromise(() => translateImage(targetUrl, targetElement, actionType, arrayBuffer))
-                } else if (toriiData.toriiState == "translating" || toriiData.toriiState == "awaiting" || toriiData.toriiState == "screenshoting") {
-                    showError("Translation in progress. Timeout is 100 seconds.", targetElement, false)
+                    newImg.src = toriiTargets.get(targetElement).originalURL
                 }
-            } else {
-                showError("Please log in with the extension from the popup. Go to your browser's extension menu.", targetElement)
-            }
-        }
-    } catch (error) {
-        showError("Failed to process image.", targetElement)
 
-        sendError(error, "toriiClick from: " + window.location.href)
-    }
-}
-async function contextMenuClick(targetElement) {
-    try {
-        if (targetElement.classList.contains("torii-translated") || targetElement.classList.contains("torii-translating")) {
-            return
-        }
+                toriiData.toriiState = "original"
+                toriiData.toriiDownload.style.display = "none"
+                toriiData.toriiEdit.style.display = "none"
 
-        targetElement.classList.add("torii-translating")
+                toriiIcon.classList.remove("torii-pulsing")
+                toriiIcon.classList.add("torii-scaling")
+            } else if (toriiData.toriiState == "original" || toriiData.toriiState == "error") {
+                if (toriiData.toriiState == "error") {
+                    clearError(targetElement)
+                }
 
-        if (credits !== null) {
-            if (!targetElement.isEqualNode(contextMenuTargetElement)) {
-                contextMenuTargetElement = targetElement
                 removeExtraSources(targetElement)
-                const isScreenshot = takeScreenshot
-                const actionType = isScreenshot ? "screenshot_menu" : "normal_menu"
+
+                toriiIcon.classList.add("torii-loading")
+                toriiIcon.classList.remove("torii-scaling")
 
                 let targetUrl = null
+
                 try {
                     targetUrl = await getTargetUrl(targetElement)
                 } catch (error) {
-                    showError(isScreenshot ? "Failed to take a screenshot." : "Failed to process image.", targetElement)
+                    toriiIcon.classList.remove("torii-loading")
+                    toriiIcon.classList.add("torii-scaling")
 
-                    sendError(error?.message ? error : { message: error, stack: "none" }, "contextMenuClick from: " + window.location.href)
+                    if (error == "Auto and screenshot are not supported at the same time.") {
+                        turnOffAuto()
+                        takeScreenshot = false
+                        return
+                    }
 
-                    contextMenuTargetElement = null
+                    const fromScreenshot = error?.message?.includes?.("screenshot") || error?.includes?.("screenshot")
 
+                    showError(fromScreenshot ? "Failed to take a screenshot." : "Failed to process image.", targetElement)
+                    console.error("Error in toriiClick getTargetUrl: ", error)
                     return
                 }
 
+                const actionType = toriiData.toriiState == "screenshoting" ? "screenshot_normal" : "normal_click"
+                toriiData.toriiState = "awaiting"
                 let arrayBuffer = null
 
                 try {
@@ -4015,23 +3874,74 @@ async function contextMenuClick(targetElement) {
                     arrayBuffer = null
                 }
 
-                await contextMenuTranslateImage(targetUrl, targetElement, actionType, arrayBuffer)
-            } else {
+                executePromise(() => translateImage(targetUrl, targetElement, actionType, arrayBuffer))
+            } else if (toriiData.toriiState == "translating" || toriiData.toriiState == "awaiting" || toriiData.toriiState == "screenshoting") {
                 showError("Translation in progress. Timeout is 100 seconds.", targetElement, false)
             }
-        } else {
-            showError("Please log in with the extension from the popup. Go to your browser's extension menu.", targetElement)
         }
     } catch (error) {
         showError("Failed to process image.", targetElement)
+        console.error("Error in toriiClick: ", error)
+    }
+}
+async function contextMenuClick(targetElement) {
+    try {
+        if (targetElement.classList.contains("torii-translated") || targetElement.classList.contains("torii-translating")) {
+            return
+        }
 
-        sendError(error, "toriiClick from: " + window.location.href)
+        targetElement.classList.add("torii-translating")
+
+        if (!targetElement.isEqualNode(contextMenuTargetElement)) {
+            contextMenuTargetElement = targetElement
+            removeExtraSources(targetElement)
+            const isScreenshot = takeScreenshot
+            const actionType = isScreenshot ? "screenshot_menu" : "normal_menu"
+
+            let targetUrl = null
+            try {
+                targetUrl = await getTargetUrl(targetElement)
+            } catch (error) {
+                showError(isScreenshot ? "Failed to take a screenshot." : "Failed to process image.", targetElement)
+                console.error("Error in contextMenuClick getTargetUrl: ", error)
+                contextMenuTargetElement = null
+                return
+            }
+
+            let arrayBuffer = null
+
+            try {
+                if (targetUrl) {
+                    const response = await fetch(targetUrl, {
+                        headers: {
+                            "Referer": window.location.href,
+                            "User-Agent": window.navigator.userAgent
+                        }
+                    })
+
+                    if (response && response.ok) {
+                        const responseBlob = await response.blob()
+                        const buffer = await responseBlob.arrayBuffer()
+                        arrayBuffer = Array.from(new Uint8Array(buffer))
+                    }
+                }
+            } catch (error) {
+                arrayBuffer = null
+            }
+
+            await contextMenuTranslateImage(targetUrl, targetElement, actionType, arrayBuffer)
+        } else {
+            showError("Translation in progress. Timeout is 100 seconds.", targetElement, false)
+        }
+    } catch (error) {
+        showError("Failed to process image.", targetElement)
+        console.error("Error in contextMenuClick: ", error)
     }
 }
 
 async function executePromise(promise) {
     try {
-        while (enabled && credits !== null && (credits > 0 || !auto) && !autoError) {
+        while (enabled) {
             if (executingPromises.size >= 5) {
                 await Promise.race(executingPromises)
             } else {
@@ -4039,27 +3949,8 @@ async function executePromise(promise) {
                 break
             }
         }
-
-        if (credits === 0 || autoError) {
-            executingPromises.clear()
-
-            for (const [targetElement, toriiData] of toriiTargets) {
-                if (!toriiData.active) continue
-
-                try {
-                    if (toriiData.toriiState == "awaiting" || toriiData.toriiState == "screenshoting") {
-                        toriiData.toriiState = "original"
-
-                        toriiData.toriiIcon.classList.remove("torii-loading")
-                        toriiData.toriiIcon.classList.add("torii-scaling")
-                    }
-                } catch (error) {
-                    sendError(error, "executePromise zero credits from: " + window.location.href)
-                }
-            }
-        }
     } catch (error) {
-        sendError(error, "executePromise from: " + window.location.href)
+        console.error("Error in executePromise: ", error)
     }
 }
 
@@ -4139,8 +4030,7 @@ function getImageFromBlob(targetElement) {
 
         return canvas.toDataURL()
     } catch (error) {
-        sendError(error, "getImageFromBlob from: " + window.location.href)
-
+        console.error("Error getting image from blob: ", error)
         return null
     }
 }
@@ -4161,8 +4051,7 @@ function getCorrectImage(targetElement) {
             }
         }
     } catch (error) {
-        sendError(error, "getCorrectImage from: " + window.location.href)
-
+        console.error("Error getting correct image: ", error)
         return null
     }
 }
@@ -4240,7 +4129,7 @@ function translateImage(url, targetElement, actionType, buffer) {
                 }).catch((error) => {
                     showError("Failed to process image.", targetElement)
 
-                    sendError(error, "translate from: " + window.location.href)
+                    console.error("Error translating image: ", error)
 
                     toriiIcon.classList.remove("torii-loading")
 
@@ -4251,9 +4140,7 @@ function translateImage(url, targetElement, actionType, buffer) {
             }
         } catch (error) {
             showError("Failed to process image.", targetElement)
-
-            sendError(error, "translateImage from: " + window.location.href)
-
+            console.error("Error in translateImage function: ", error)
             resolve()
         }
     })
@@ -4325,7 +4212,7 @@ function contextMenuTranslateImage(url, targetElement, actionType, buffer) {
             }).catch((error) => {
                 showError("Failed to process image.", targetElement)
 
-                sendError(error, "contextMenu translate from: " + window.location.href)
+                console.error("Error in context menu translate: ", error)
 
                 executingPromises.delete(translationPromise)
 
@@ -4337,15 +4224,10 @@ function contextMenuTranslateImage(url, targetElement, actionType, buffer) {
             })
         } catch (error) {
             showError("Failed to process image.", targetElement)
-
-            sendError(error, "contextMenuTranslateImage from: " + window.location.href)
-
+            console.error("Error in contextMenuTranslateImage function: ", error)
             executingPromises.delete(translationPromise)
-
             contextMenuTargetElement = null
-
             removeSpinner()
-
             resolve()
         }
     })
@@ -4424,7 +4306,7 @@ function removeExtraSources(targetElement) {
             }
         }
     } catch (error) {
-        sendError(error, "removeExtraSources from: " + window.location.href)
+        console.error("Error removing extra sources: ", error)
     }
 }
 
@@ -4457,7 +4339,7 @@ function turnOffAuto() {
 
             targetToriiAutoIcon.classList.remove("torii-rotating")
         } catch (error) {
-            sendError(error, "show error remove auto")
+            console.error("Error turning off auto icon: ", error)
         }
     }
 }
@@ -4465,21 +4347,16 @@ function turnOffAuto() {
 function showError(errorMsg, targetElement, shouldChangeState = true) {
     try {
         if (errorMsg.includes("Failed to process image.")) {
-
             if (hasContextMenu) {
                 errorMsg = "Failed to process image. Press <span style='background-color: gray; color: white; border-radius: 5px; padding: 2px 5px'>Alt + Shift + D</span> or right-click on the image and use Screenshot or Screen Crop. You can also download it and translate it locally&nbsp<a style='background-color: #EF9E82; text-shadow: 0 1.5px 1.5px rgba(0, 0, 0, .25); color: white; border-radius: 5px; text-decoration: none; padding: 3px 6px' href='https://toriitranslate.com/translate' target='_blank'>here</a>"
             } else {
                 errorMsg = "Failed to process image. Use a different website or you can download it and translate it locally&nbsp<a style='background-color: #EF9E82; text-shadow: 0 1.5px 1.5px rgba(0, 0, 0, .25); color: white; border-radius: 5px; text-decoration: none; padding: 3px 6px' href='https://toriitranslate.com/translate' target='_blank'>here</a>"
             }
-        } else if (errorMsg.includes("Out of credits.")) {
-            errorMsg = "Out of credits. Upgrade&nbsp<a style='background-color: #EF9E82; text-shadow: 0 1.5px 1.5px rgba(0, 0, 0, .25); color: white; border-radius: 5px; text-decoration: none; padding: 3px 6px' href='https://toriitranslate.com/pricing' target='_blank'>here</a>"
         } else if (errorMsg.includes("Failed to take a screenshot.")) {
             errorMsg = "Failed to take a screenshot. Use a different website or you can download it and translate it locally&nbsp<a style='background-color: #EF9E82; text-shadow: 0 1.5px 1.5px rgba(0, 0, 0, .25); color: white; border-radius: 5px; text-decoration: none; padding: 3px 6px' href='https://toriitranslate.com/translate' target='_blank'>here</a>"
         }
 
         if (auto) {
-            autoError = true
-
             turnOffAuto()
         }
 
@@ -4546,7 +4423,7 @@ function showError(errorMsg, targetElement, shouldChangeState = true) {
             toriiDOM.appendChild(toriiNotification)
         }
     } catch (error) {
-        sendError(error, "showError from: " + window.location.href)
+        console.error("Error in showError function: ", error)
     }
 }
 

@@ -1,426 +1,477 @@
-// background.js - Complete version without Firebase Auth
+// background.js — no auth, no credits, no feedback
 
-let sentErrors = 0
-
-// Configuration for your local API
-const CONFIG = {
-    apiUrl: "http://localhost:3000/api", // Change to your API URL
-    maxErrors: 10
-}
-
-// Utility functions
-function isMobile() {
-    const userAgentDataMobile = navigator?.userAgentData?.mobile
-
-    if (userAgentDataMobile === undefined) {
-        return navigator.userAgent.toLowerCase().includes("mobile")
-    }
-
-    return userAgentDataMobile
-}
-
-async function wait(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms))
+// =========================
+// Utils
+// =========================
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function blobToImage(blob) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result.replace("application/octet-stream", "image/jpeg"))
-        reader.readAsDataURL(blob)
-    })
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () =>
+      resolve(reader.result.replace("application/octet-stream", "image/jpeg"));
+    reader.readAsDataURL(blob);
+  });
 }
 
-// Message handler
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    handleMessage(msg).then(sendResponse).catch(error => {
-        sendError(error, "on message")
-        sendResponse({ success: false, content: { error: "Something went wrong. Contact support." } })
-    })
-
-    // Updated message types list (removed auth-related ones)
-    if (
-        msg.type === "translate-image" ||
-        msg.type === "inpaint" ||
-        msg.type === "storage" ||
-        msg.type === "edit" ||
-        msg.type === "keep-alive" ||
-        msg.type === "screenshot" ||
-        msg.type === "command_contextmenu" ||
-        msg.type === "command_screencrop" ||
-        msg.type === "command_translate" ||
-        msg.type === "command_screenshot" ||
-        msg.type === "contextmenu_screenshot" ||
-        msg.type === "contextmenu_translate" ||
-        msg.type === "contextmenu_screencrop" ||
-        msg.type === "contextmenu_repeatscreencrop" ||
-        msg.type === "contextmenu_edit" ||
-        msg.type === "contextmenu_auto"
-    ) {
-        return true
+async function getIP() {
+  try {
+    const response = await fetch("https://api64.ipify.org?format=json", {
+      method: "GET",
+      signal: AbortSignal.timeout(1000),
+    });
+    if (response.status === 200) {
+      const json = await response.json();
+      return json?.ip ?? null;
     }
-})
-
-async function handleMessage(msg) {
-    if (msg.type === "translate-image") {
-        return await translateImage(msg.url, msg.site, msg.blob, msg.actionType)
-    } else if (msg.type === "inpaint") {
-        return await inpaintImage(msg.image, msg.mask)
-    } else if (msg.type === "storage") {
-        return await getStorageImages(msg.storageURLs)
-    } else if (msg.type === "edit") {
-        return await getImageForEdit(msg.url, msg.site)
-    } else if (msg.type === "keep-alive") {
-        return { success: true }
-    } else if (msg.type === "screenshot") {
-        return await takeScreenshot()
-    }
-
-    // Return error for unknown message types
-    console.log("Unknown message type:", msg.type)
-    return { success: false, content: { error: "Unknown message type" } }
+  } catch (_) {
+    /* ignore */
+  }
+  return null;
 }
 
-// Main translation function
-async function translateImage(url, site, blobData, actionType) {
-    try {
-        const form = new FormData()
-
-        // Handle blob data
-        if (blobData) {
-            const imageArray = new Uint8Array(blobData)
-            const imageBlob = new Blob([imageArray])
-            form.append("file", imageBlob)
-        }
-
-        // Handle URL
-        if (url && !url.startsWith("blob")) {
-            form.append("url", url)
-        }
-
-        // Get settings from storage
-        const settings = await chrome.storage.sync.get({
-            torii_target_lang: "en",
-            torii_font: "wildwords",
-            translation_model: "gemini-2.0-flash",
-            torii_stroke_enabled: true,
-            torii_light_novel_mode: false,
-            torii_legacy_inpaint: false
-        })
-
-        // Prepare headers (no authentication needed)
-        const headers = {
-            "X-Target-Lang": settings["torii_target_lang"],
-            "X-Translator": settings["translation_model"],
-            "X-Font": settings["torii_font"],
-            "X-Stroke-Disabled": !settings["torii_stroke_enabled"],
-            "X-Light-Novel-Mode": settings["torii_light_novel_mode"],
-            "X-Legacy-Inpaint": settings["torii_legacy_inpaint"],
-            "X-Image-URL": site,
-            "X-Action": actionType,
-            "X-API-Version": "v1"
-        }
-
-        // Call your local API instead of Torii
-        const response = await fetch(`${CONFIG.apiUrl}/translate-image`, {
-            method: "POST",
-            body: form,
-            headers: headers,
-            signal: AbortSignal.timeout(100000),
-        })
-
-        if (!response.ok) {
-            const errorText = await response.text()
-            return {
-                success: false,
-                content: { error: errorText }
-            }
-        }
-
-        const result = await response.json()
-
-        if (!result.success) {
-            return {
-                success: false,
-                content: { error: result.error || "Failed to process image" }
-            }
-        }
-
-        return {
-            success: true,
-            content: {
-                translated: result.translated_image,
-                original: result.original_image,
-                inpainted: result.inpainted_image,
-                text: result.detected_text
-            }
-        }
-
-    } catch (error) {
-        await sendError(error, "translate image from: " + site)
-        return { success: false, content: { error: "Failed to process image." } }
-    }
-}
-
-// Inpaint function
-async function inpaintImage(imageData, maskData) {
-    try {
-        const imageArray = new Uint8Array(imageData)
-        const imageBlob = new Blob([imageArray])
-
-        const maskArray = new Uint8Array(maskData)
-        const maskBlob = new Blob([maskArray])
-
-        const formData = new FormData()
-        formData.append("image", imageBlob)
-        formData.append("mask", maskBlob)
-
-        const response = await fetch(`${CONFIG.apiUrl}/inpaint`, {
-            method: "POST",
-            body: formData,
-            signal: AbortSignal.timeout(60000),
-        })
-
-        if (!response.ok) {
-            return { success: false, content: { error: "Failed to inpaint image." } }
-        }
-
-        const result = await response.json()
-
-        if (!result.success) {
-            return { success: false, content: { error: result.error || "Failed to inpaint image." } }
-        }
-
-        return {
-            success: true,
-            content: { inpaintedImageSrc: result.inpainted_image }
-        }
-
-    } catch (error) {
-        await sendError(error, "inpaint")
-        return { success: false, content: { error: "Failed to inpaint image." } }
-    }
-}
-
-// Storage function
-async function getStorageImages(storageURLs) {
-    try {
-        const response = await fetch(`${CONFIG.apiUrl}/storage?urls=${encodeURIComponent(JSON.stringify(storageURLs))}`, {
-            method: "GET",
-            signal: AbortSignal.timeout(100000),
-        })
-
-        if (!response.ok) {
-            return { success: false, content: { error: "Failed to get storage images." } }
-        }
-
-        const data = await response.json()
-        return { success: true, content: data }
-
-    } catch (error) {
-        await sendError(error, "get storage images")
-        return { success: false, content: { error: "Failed to get storage images." } }
-    }
-}
-
-// Edit function
-async function getImageForEdit(url, site) {
-    try {
-        const image = await fetch(url, {
-            headers: {
-                "Referer": site,
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
-            }
-        })
-
-        if (image.ok) {
-            const imageBlob = await image.blob()
-            const src = await blobToImage(imageBlob)
-            return { success: true, content: { src: src } }
-        }
-
-        return { success: false, content: { error: "Failed to get image." } }
-
-    } catch (error) {
-        await sendError(error, "get image for edit")
-        return { success: false, content: { error: "Failed to get image." } }
-    }
-}
-
-// Screenshot function
-async function takeScreenshot() {
-    try {
-        const dataURL = await chrome.tabs.captureVisibleTab(null, { format: "png" })
-        return { success: true, content: { dataURL } }
-    } catch (error) {
-        await sendError(error, "take screenshot")
-        return { success: false, content: { error: "Failed to take screenshot." } }
-    }
-}
-
-// Error logging function (simplified)
+let sentErrors = 0;
 async function sendError(error, loc) {
-    try {
-        if (error?.message?.includes?.("because the client is offline")) {
-            return
-        }
+  try {
+    // tránh spam & bỏ qua lỗi offline noise
+    if (error?.message?.includes?.("because the client is offline")) return;
 
-        sentErrors += 1
+    sentErrors += 1;
+    if (sentErrors > 10) return;
 
-        if (sentErrors > CONFIG.maxErrors) {
-            return
-        }
+    const ip = await getIP();
 
-        // Simple console logging (you can enhance this)
-        console.error(`Error in ${loc}:`, error)
+    const report = {
+      stack_trace: error?.stack ?? null,
+      message: error?.message ?? String(error),
+      created: new Date().toISOString(),
+      email: null,         // no auth
+      location: loc ?? null,
+      meta: {
+        agent: navigator?.userAgent || null,
+        platform: navigator?.userAgentData?.platform || null,
+        brands: navigator?.userAgentData?.brands || null,
+      },
+      ip,
+      fingerprint: null,   // no fingerprint
+    };
 
-        // Optional: Send to your own error reporting API
-        // const report = {
-        //     stack_trace: error?.stack,
-        //     message: error?.message,
-        //     created: new Date().toISOString(),
-        //     location: loc,
-        //     meta: {
-        //         agent: navigator?.userAgent || null,
-        //         platform: navigator?.userAgentData?.platform || null,
-        //     }
-        // }
-
-        // await fetch(`${CONFIG.apiUrl}/report-error`, {
-        //     method: "POST",
-        //     headers: { "Content-Type": "application/json" },
-        //     body: JSON.stringify(report)
-        // })
-
-    } catch (reportError) {
-        console.error("Failed to report error:", reportError)
-    }
+    // Nếu muốn tắt hoàn toàn reporting, xoá khối fetch dưới:
+    await fetch("https://api.toriitranslate.com/api/reporting", {
+      method: "POST",
+      body: JSON.stringify(report, (k, v) => (v === undefined ? null : v)),
+      headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(3000),
+    });
+  } catch (e) {
+    console.log("Failed to send error. Error: ", e);
+  }
 }
 
-// Simplified uninstall URL function
-async function setUninstallURL() {
+function showBadge(text) {
+  try {
+    chrome.action.setBadgeText({ text: text });
+    if (text !== "") {
+      chrome.action.setBadgeTextColor({ color: [255, 255, 255, 255] });
+      chrome.action.setBadgeBackgroundColor({ color: [255, 0, 0, 255] });
+    }
+  } catch (error) {
+    sendError(error, "show badge");
+  }
+}
+
+function showUpdateBadge() {
+  showBadge("1");
+  chrome.storage.sync.set({ torii_new_version: true });
+}
+
+function removeUpdateBadge() {
+  showBadge("");
+  chrome.storage.sync.set({ torii_new_version: false });
+}
+
+// =========================
+// API helpers (no auth)
+// =========================
+async function sendImage(url, site, blob, actionType) {
+  try {
+    const form = new FormData();
+    if (blob) form.append("file", blob);
+    if (url && !url.startsWith("blob")) form.append("url", url);
+
+    const settings = await chrome.storage.sync.get({
+      torii_target_lang: "en",
+      torii_font: "wildwords",
+      translation_model: "gemini-2.0-flash",
+      torii_stroke_enabled: true,
+      torii_light_novel_mode: false,
+      torii_legacy_inpaint: false,
+    });
+
+    // KHÔNG Authorization. Nếu có API key riêng của bạn, thêm vào header tại đây.
+    const headers = {
+      target_lang: settings["torii_target_lang"],
+      translator: settings["translation_model"],
+      font: settings["torii_font"],
+      stroke_disabled: !settings["torii_stroke_enabled"],
+      light_novel_mode: settings["torii_light_novel_mode"],
+      legacy_inpaint: settings["torii_legacy_inpaint"],
+      image_url: site,
+      action: actionType,
+      api_version: "v1",
+      // "X-Api-Key": "YOUR_KEY_HERE"
+    };
+
+    const response = await fetch("https://api.toriitranslate.com/api/upload", {
+      method: "POST",
+      body: form,
+      headers,
+      signal: AbortSignal.timeout(100000),
+    });
+
+    if (response.headers.get("success") === "false") {
+      return { success: false, content: { error: await response.text() } };
+    }
+
+    return {
+      success: true,
+      content: {
+        image: await blobToImage(await response.blob()),
+        original: response.headers.get("original"),
+        inpainted: response.headers.get("inpainted"),
+        text: response.headers.get("text"),
+      },
+    };
+  } catch (error) {
+    await sendError(error, "send image from: " + site);
+    return { success: false, content: { error: "Failed to process image." } };
+  }
+}
+
+// =========================
+// Message Handler
+// =========================
+async function handleMessage(msg) {
+  // chỉ giữ các type cần thiết, không có feedback / user / login / credits
+
+  if (msg.type === "keep-alive") {
+    return { success: true };
+  }
+
+  if (msg.type === "translate") {
+    let response = null;
     try {
-        const url = `https://your-website.com/feedback?reason=uninstall`
-        await chrome.runtime.setUninstallURL(url)
+      if (msg.buffer) {
+        const uint8Array = new Uint8Array(msg.buffer);
+        const blob = new Blob([uint8Array]);
+        response = await sendImage(msg.url, msg.site, blob, msg.actionType);
+      } else {
+        const image = await fetch(msg.url, {
+          headers: {
+            Referer: msg.site,
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+          },
+        });
+        if (image.ok) {
+          const imageBlob = await image.blob();
+          response = await sendImage(msg.url, msg.site, imageBlob, msg.actionType);
+        } else {
+          response = await sendImage(msg.url, msg.site, null, msg.actionType);
+        }
+      }
+    } catch (_) {
+      response = await sendImage(msg.url, msg.site, null, msg.actionType);
+    }
+
+    if (!response?.success) {
+      return { success: false, content: { error: response?.content?.error || "Failed to translate image." } };
+    }
+
+    try {
+      return {
+        success: true,
+        content: {
+          translated: response.content.image,
+          original: response.content.original,
+          inpainted: response.content.inpainted,
+          text: response.content.text,
+        },
+      };
     } catch (error) {
-        console.error("Failed to set uninstall URL:", error)
+      await sendError(error, "blob to image");
+      return { success: false, content: { error: "Failed to process image." } };
     }
+  }
+
+  if (msg.type === "edit") {
+    try {
+      const image = await fetch(msg.url, {
+        headers: {
+          Referer: msg.site,
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+        },
+      });
+      if (!image.ok) return { success: false, content: { error: "Failed to get image." } };
+
+      const imageBlob = await image.blob();
+      const src = await blobToImage(imageBlob);
+      return { success: true, content: { src } };
+    } catch (error) {
+      await sendError(error, "edit");
+      return { success: false, content: { error: "Failed to get image." } };
+    }
+  }
+
+  if (msg.type === "inpaint") {
+    try {
+      const imageArray = new Uint8Array(msg.image);
+      const imageBlob = new Blob([imageArray]);
+
+      const maskArray = new Uint8Array(msg.mask);
+      const maskBlob = new Blob([maskArray]);
+
+      const formData = new FormData();
+      formData.append("image", imageBlob);
+      formData.append("mask", maskBlob);
+
+      const response = await fetch("https://api.toriitranslate.com/api/inpaint", {
+        method: "POST",
+        body: formData,
+        // headers: { "X-Api-Key": "YOUR_KEY_HERE" },
+        signal: AbortSignal.timeout(60000),
+      });
+
+      if (response.headers.get("success") == "false") {
+        return { success: false, content: { error: "Failed to inpaint image." } };
+      }
+
+      const inpaintedImageSrc = await blobToImage(await response.blob());
+      return { success: true, content: { inpaintedImageSrc } };
+    } catch (error) {
+      await sendError(error, "inpaint");
+      return { success: false, content: { error: "Failed to inpaint image." } };
+    }
+  }
+
+  if (msg.type === "storage") {
+    try {
+      const storageURLs = msg.storageURLs;
+
+      const response = await fetch("https://api.toriitranslate.com/api/storage", {
+        method: "GET",
+        headers: {
+          storage_urls: storageURLs,
+          // "X-Api-Key": "YOUR_KEY_HERE"
+        },
+        signal: AbortSignal.timeout(100000),
+      });
+
+      if (response.headers.get("success") == "false") {
+        return { success: false, content: { error: "Failed to get original image." } };
+      }
+
+      let data = await response.json();
+      if (!data?.success && typeof data === "string") {
+        try { data = JSON.parse(data); } catch { /* ignore */ }
+      }
+
+      return { success: true, content: data };
+    } catch (error) {
+      await sendError(error, "storage");
+      return { success: false, content: { error: "Failed to get original image." } };
+    }
+  }
+
+  if (msg.type === "update_seen") {
+    try {
+      removeUpdateBadge();
+      return { success: true };
+    } catch (error) {
+      await sendError(error, "update_seen");
+      return { success: false };
+    }
+  }
+
+  if (msg.type === "error") {
+    await sendError({ message: msg.message, stack: msg.stack }, msg.loc);
+    return { success: true };
+  }
+
+  if (msg.type === "screenshot") {
+    while (true) {
+      try {
+        const dataURL = await chrome.tabs.captureVisibleTab(null, { format: "png" });
+        return { success: true, content: { dataURL } };
+      } catch (error) {
+        if (String(error?.message || "").includes("exceeds")) {
+          await wait(200);
+        } else {
+          await sendError(error, "screenshot");
+          return { success: false, content: { error: "Failed to capture screenshot." } };
+        }
+      }
+    }
+  }
+
+  // Unknown
+  await sendError({ message: "Unknown msg: " + JSON.stringify(msg), stack: "N/A" }, "handle message");
+  return { success: false, content: { error: "Unknown request." } };
 }
 
-// Installation handler (simplified)
+// =========================
+// Listeners
+// =========================
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  handleMessage(msg)
+    .then(sendResponse)
+    .catch((error) => {
+      sendError(error, "onMessage");
+      sendResponse({ success: false, content: { error: "Internal error." } });
+    });
+
+  if (
+    msg.type == "translate" ||
+    msg.type == "inpaint" ||
+    msg.type == "error" ||
+    msg.type == "update_seen" ||
+    msg.type == "screenshot" ||
+    msg.type == "storage" ||
+    msg.type == "edit" ||
+    msg.type == "keep-alive"
+  ) {
+    // giữ kênh async
+    return true;
+  }
+});
+
 chrome.runtime.onInstalled.addListener(async (details) => {
-    try {
-        const currentVersion = chrome.runtime.getManifest().version
-        const previousVersion = details.previousVersion
-        const reason = details.reason
+  try {
+    const currentVersion = chrome.runtime.getManifest().version;
+    const previousVersion = details.previousVersion;
+    const reason = details.reason;
 
-        if (reason === "update") {
-            console.log(`Extension updated from ${previousVersion} to ${currentVersion}`)
-        } else if (reason === "install") {
-            console.log("Extension installed")
-            // await setUninstallURL() // Optional
-        }
+    if (reason == "update") {
+      const previousVersionDigits = previousVersion?.split?.(".") ?? [];
+      const currentVersionDigits = currentVersion?.split?.(".") ?? [];
+      const significantPrevious =
+        previousVersionDigits[previousVersionDigits.length - 2];
+      const significantCurrent =
+        currentVersionDigits[currentVersionDigits.length - 2];
+      const isSignificantUpdate = significantPrevious != significantCurrent;
+      const sameLength = previousVersionDigits.length == currentVersionDigits.length;
 
-    } catch (error) {
-        console.error("onInstalled error:", error)
+      if (isSignificantUpdate && sameLength) {
+        showUpdateBadge();
+      }
     }
+    // reason == "install": không đặt uninstall URL nữa (no user/email)
+  } catch (error) {
+    await sendError(error, "onInstalled");
+  }
 
-    // Create context menus
-    try {
-        chrome.contextMenus.create({
-            id: "torii_contextmenu",
-            title: "Torii (Alt+Shift+D)",
-            contexts: ["all"]
-        })
+  // context menus
+  try {
+    chrome.contextMenus.create({
+      id: "torii_contextmenu",
+      title: "Torii (Alt+Shift+D)",
+      contexts: ["all"],
+    });
 
-        chrome.contextMenus.create({
-            id: "torii_screenshot",
-            title: "Screenshot Image (Alt+Shift+C)",
-            contexts: ["all"],
-            parentId: "torii_contextmenu"
-        })
+    chrome.contextMenus.create({
+      id: "torii_screenshot",
+      title: "Screenshot Image (Alt+Shift+C)",
+      contexts: ["all"],
+      parentId: "torii_contextmenu",
+    });
 
-        chrome.contextMenus.create({
-            id: "torii_translate",
-            title: "Translate Image (Alt+Shift+Z)",
-            contexts: ["all"],
-            parentId: "torii_contextmenu"
-        })
+    chrome.contextMenus.create({
+      id: "torii_translate",
+      title: "Translate Image (Alt+Shift+Z)",
+      contexts: ["all"],
+      parentId: "torii_contextmenu",
+    });
 
-        chrome.contextMenus.create({
-            id: "torii_screencrop",
-            title: "Screen Crop Image (Alt+Shift+X)",
-            contexts: ["all"],
-            parentId: "torii_contextmenu"
-        })
+    chrome.contextMenus.create({
+      id: "torii_screencrop",
+      title: "Screen Crop Image (Alt+Shift+X)",
+      contexts: ["all"],
+      parentId: "torii_contextmenu",
+    });
 
-        chrome.contextMenus.create({
-            id: "torii_repeatscreencrop",
-            title: "Repeat Last Screen Crop",
-            contexts: ["all"],
-            parentId: "torii_contextmenu"
-        })
+    chrome.contextMenus.create({
+      id: "torii_repeatscreencrop",
+      title: "Repeat Last Screen Crop",
+      contexts: ["all"],
+      parentId: "torii_contextmenu",
+    });
 
-        chrome.contextMenus.create({
-            id: "torii_edit",
-            title: "Edit Image",
-            contexts: ["all"],
-            parentId: "torii_contextmenu"
-        })
+    chrome.contextMenus.create({
+      id: "torii_edit",
+      title: "Edit Image",
+      contexts: ["all"],
+      parentId: "torii_contextmenu",
+    });
 
-        chrome.contextMenus.create({
-            id: "torii_auto",
-            title: "Toggle Auto Translate",
-            contexts: ["all"],
-            parentId: "torii_contextmenu"
-        })
-    } catch (error) {
-        console.log("Failed to create context menus. Error: ", error)
-    }
-})
+    chrome.contextMenus.create({
+      id: "torii_auto",
+      title: "Toggle Auto Translate",
+      contexts: ["all"],
+      parentId: "torii_contextmenu",
+    });
+  } catch (error) {
+    console.log("Failed to create context menus. Error: ", error);
+  }
+});
 
-// Commands handler (reduced to 4 shortcuts max)
+// keyboard shortcuts
 try {
-    chrome.commands.onCommand.addListener(async (command, tab) => {
-        if (tab && command === "torii_contextmenu") {
-            chrome.tabs.sendMessage(tab.id, { type: "command_contextmenu" }).catch(() => { })
-        }
-
-        if (tab && command === "torii_screencrop") {
-            chrome.tabs.sendMessage(tab.id, { type: "command_screencrop" }).catch(() => { })
-        }
-
-        if (tab && command === "torii_translate") {
-            chrome.tabs.sendMessage(tab.id, { type: "command_translate" }).catch(() => { })
-        }
-
-        if (tab && command === "torii_screenshot") {
-            chrome.tabs.sendMessage(tab.id, { type: "command_screenshot" }).catch(() => { })
-        }
-    })
+  chrome.commands.onCommand.addListener(async (command, tab) => {
+    if (tab && command == "torii_contextmenu") {
+      chrome.tabs.sendMessage(tab.id, { type: "command_contextmenu" }).catch(() => {});
+    }
+    if (tab && command == "torii_screencrop") {
+      chrome.tabs.sendMessage(tab.id, { type: "command_screencrop" }).catch(() => {});
+    }
+    if (tab && command == "torii_repeatscreencrop") {
+      chrome.tabs.sendMessage(tab.id, { type: "command_repeatscreencrop" }).catch(() => {});
+    }
+    if (tab && command == "torii_translate") {
+      chrome.tabs.sendMessage(tab.id, { type: "command_translate" }).catch(() => {});
+    }
+    if (tab && command == "torii_screenshot") {
+      chrome.tabs.sendMessage(tab.id, { type: "command_screenshot" }).catch(() => {});
+    }
+    if (tab && command == "torii_edit") {
+      chrome.tabs.sendMessage(tab.id, { type: "command_edit" }).catch(() => {});
+    }
+  });
 } catch (error) {
-    console.log("Failed to create command listener. Error: ", error)
+  console.log("Failed to create command listener. Error: ", error);
 }
 
-// Context menu click handler
+// context menu click routing
 try {
-    chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-        if (info.menuItemId === "torii_screenshot") {
-            chrome.tabs.sendMessage(tab.id, { type: "contextmenu_screenshot" }).catch(() => { })
-        } else if (info.menuItemId === "torii_translate") {
-            chrome.tabs.sendMessage(tab.id, { type: "contextmenu_translate" }).catch(() => { })
-        } else if (info.menuItemId === "torii_screencrop") {
-            chrome.tabs.sendMessage(tab.id, { type: "contextmenu_screencrop" }).catch(() => { })
-        } else if (info.menuItemId === "torii_repeatscreencrop") {
-            chrome.tabs.sendMessage(tab.id, { type: "contextmenu_repeatscreencrop" }).catch(() => { })
-        } else if (info.menuItemId === "torii_edit") {
-            chrome.tabs.sendMessage(tab.id, { type: "contextmenu_edit" }).catch(() => { })
-        } else if (info.menuItemId === "torii_auto") {
-            chrome.tabs.sendMessage(tab.id, { type: "contextmenu_auto" }).catch(() => { })
-        }
-    })
+  chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+    if (info.menuItemId == "torii_screenshot") {
+      chrome.tabs.sendMessage(tab.id, { type: "contextmenu_screenshot" }).catch(() => {});
+    } else if (info.menuItemId == "torii_translate") {
+      chrome.tabs.sendMessage(tab.id, { type: "contextmenu_translate" }).catch(() => {});
+    } else if (info.menuItemId == "torii_screencrop") {
+      chrome.tabs.sendMessage(tab.id, { type: "contextmenu_screencrop" }).catch(() => {});
+    } else if (info.menuItemId == "torii_repeatscreencrop") {
+      chrome.tabs.sendMessage(tab.id, { type: "contextmenu_repeatscreencrop" }).catch(() => {});
+    } else if (info.menuItemId == "torii_edit") {
+      chrome.tabs.sendMessage(tab.id, { type: "contextmenu_edit" }).catch(() => {});
+    } else if (info.menuItemId == "torii_auto") {
+      chrome.tabs.sendMessage(tab.id, { type: "contextmenu_auto" }).catch(() => {});
+    }
+  });
 
-    chrome.storage.sync.set({ torii_contextmenu: true })
+  chrome.storage.sync.set({ torii_contextmenu: true });
 } catch (error) {
-    chrome.storage.sync.set({ torii_contextmenu: false })
+  chrome.storage.sync.set({ torii_contextmenu: false });
 }

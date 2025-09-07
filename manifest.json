@@ -1,40 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "Torri Image Translator Clone",
-  "version": "1.0.0",
-  "description": "Translate text in images automatically using AI - No login required",
-
-  "permissions": [
-    "activeTab",
-    "storage",
-    "contextMenus",
-    "tabs",
-    "scripting",
-    "webRequest"
-  ],
-
-  "host_permissions": [
-    "http://*/*",
-    "https://*/*"
-  ],
-
-  "background": {
-    "service_worker": "scripts/background.js",
-    "type": "module"
-  },
-
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["scripts/content.js"],
-      "css": ["css/content.css"],
-      "run_at": "document_end"
-    }
-  ],
+  "name": "Torii Image Translator Clone",
+  "version": "1.0.8.1",
+  "description": "Best manga translator, manhwa translator, image translator in general, using AI, translate any image on any website!",
 
   "action": {
+    "default_title": "Torii Image Translator Clone",
     "default_popup": "popup/popup.html",
-    "default_title": "Your Image Translator",
     "default_icon": {
       "16": "images/16.png",
       "32": "images/32.png",
@@ -43,6 +15,53 @@
     }
   },
 
+  "background": {
+    "service_worker": "scripts/background.js",
+    "type": "module"
+  },
+
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "contextMenus"
+  ],
+
+  "host_permissions": [
+    "https://api.toriitranslate.com/*",
+    "https://api64.ipify.org/*"
+  ],
+
+  "commands": {
+     "torii_contextmenu": {
+       "description": "Open Context Menu",
+       "suggested_key": { "default": "Alt+Shift+D" }
+     },
+     "torii_edit": { "description": "Edit Image" },
+     "torii_repeatscreencrop": { "description": "Repeat Last Screen Crop" },
+     "torii_screencrop": {
+       "description": "Screen Crop Image",
+       "suggested_key": { "default": "Alt+Shift+X" }
+     },
+     "torii_screenshot": {
+       "description": "Screenshot Image",
+       "suggested_key": { "default": "Alt+Shift+C" }
+     },
+     "torii_translate": {
+       "description": "Translate Image",
+       "suggested_key": { "default": "Alt+Shift+Z" }
+     }
+   },
+
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["scripts/zip.js", "scripts/content.js"],
+      "css": ["css/fonts.css"]
+    }
+  ],
+
   "icons": {
     "16": "images/16.png",
     "32": "images/32.png",
@@ -50,47 +69,11 @@
     "128": "images/128.png"
   },
 
-  "commands": {
-    "torii_contextmenu": {
-      "suggested_key": {
-        "default": "Alt+Shift+D"
-      },
-      "description": "Open Torii Context Menu"
-    },
-    "torii_translate": {
-      "suggested_key": {
-        "default": "Alt+Shift+Z"
-      },
-      "description": "Translate Image"
-    },
-    "torii_screenshot": {
-      "suggested_key": {
-        "default": "Alt+Shift+C"
-      },
-      "description": "Screenshot Image"
-    },
-    "torii_screencrop": {
-      "suggested_key": {
-        "default": "Alt+Shift+X"
-      },
-      "description": "Screen Crop Image"
-    }
-  },
-
   "web_accessible_resources": [
     {
-      "resources": [
-        "fonts/*.ttf",
-        "fonts/*.otf",
-        "images/*.png",
-        "images/*.svg",
-        "html/edit.html"
-      ],
-      "matches": ["<all_urls>"]
+      "matches": ["<all_urls>"],
+      "resources": ["images/*", "css/*", "fonts/*", "html/*"]
     }
-  ],
+  ]
 
-  "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; img-src 'self' data: blob:;"
-  }
 }
