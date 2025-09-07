@@ -1,0 +1,184 @@
+@font-face {
+    font-family: "Figtree";
+    src: url("../fonts/Figtree.ttf");
+}
+
+@font-face {
+    font-family: "KomikaJam";
+    src: url("../fonts/KomikaJam.ttf");
+}
+
+@font-face {
+    font-family: "Bangers";
+    src: url("../fonts/Bangers.ttf");
+}
+
+@font-face {
+    font-family: "NotoSans";
+    src: url("../fonts/NotoSans.ttf");
+}
+
+@font-face {
+    font-family: "WildWords";
+    src: url("../fonts/WildWords.otf");
+}
+
+@font-face {
+    font-family: "Figtree";
+    src: url("../fonts/Figtree.ttf");
+}
+
+@font-face {
+    font-family: "Edo";
+    src: url("../fonts/Edo.ttf");
+}
+
+@font-face {
+    font-family: "RIDIBatang";
+    src: url("../fonts/RIDIBatang.otf");
+}
+
+@font-face {
+    font-family: "Bushidoo";
+    src: url("../fonts/Bushidoo.ttf");
+}
+
+@font-face {
+    font-family: "Hayah";
+    src: url("../fonts/Hayah.otf");
+}
+
+@font-face {
+    font-family: "Itim";
+    src: url("../fonts/Itim.ttf");
+}
+
+.komika {
+    font-family: "KomikaJam";
+}
+
+.bangers {
+    font-family: "Bangers";
+}
+
+.edo {
+    font-family: "Edo";
+}
+
+.ridi {
+    font-family: "RIDIBatang";
+}
+
+.bushidoo {
+    font-family: "Bushidoo";
+}
+
+.hayah {
+    font-family: "Hayah";
+}
+
+.itim {
+    font-family: "Itim";
+}
+
+.notosans {
+    font-family: "NotoSans";
+}
+
+.wildwords {
+    font-family: "WildWords";
+}
+
+.font-figtree {
+    font-family: Figtree, sans-serif;
+}
+
+body {
+    height: 600px;
+    width: 400px;
+    overflow: hidden;
+}
+
+.reply {
+    cursor: pointer;
+    font-weight: bold;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-wrap: nowrap;
+    flex-shrink: 0;
+    width: 100%;
+    padding: 0.5rem;
+    border-bottom-width: 2px;
+    border-color: #60B7D3;
+    overflow: hidden;
+}
+
+.reply:hover {
+    background-color: lightgrey
+}
+
+#loader {
+    background-color: rgba(0, 0, 0, .66);
+}
+
+.loader {
+    width: 84px;
+    height: 84px;
+    border: 8px solid #FFF;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    animation: rotation 1s cubic-bezier(0.445, 0.05, 0.55, 0.95) infinite;
+}
+
+.link {
+    color: #60caff;
+}
+
+.link:hover {
+    color: #13b0ff;
+    text-decoration-line: underline;
+}
+
+.bg-offwhite {
+    background-color: #e8eded;
+}
+
+.bg-offoffwhite {
+    background-color: #dce4e4;
+}
+
+.text-dropshadow {
+    text-shadow: 0 1.5px 1.5px rgba(0, 0, 0, .25);
+}
+
+.effect-shine {
+    mask-image: linear-gradient(-45deg, rgba(0,0,0,1) 40%, rgba(0, 0, 0, 0.4), rgba(0,0,0,1) 60%);
+    mask-size: 400px;
+    animation: shine 3s infinite;
+}
+
+.effect-shine:hover {
+    animation: shine 1s infinite;
+}
+
+@keyframes shine {
+    0% {
+        mask-position: -250px 0;
+    }
+
+    100% {
+        mask-position: 150px 0px;
+    }
+}
+
+@keyframes rotation {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+} 

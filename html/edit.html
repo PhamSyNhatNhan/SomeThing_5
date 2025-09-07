@@ -1,0 +1,367 @@
+<div class="fixed top-0 left-0 w-screen h-dvh bg-offoffwhite z-[2147483647] ">
+  <div id="side-panel"
+    class="absolute max-h-[65dvh] top-2 left-2 sm:top-6 sm:left-6 items-start flex flex-col z-40 pointer-events-none">
+    <button id="toggle-settings"
+      class="absolute top-2 left-2 focus:outline-0 cursor-pointer pointer-events-auto after:content-['Hide_settings'] after:absolute after:top-1/2 after:left-full after:translate-y-[-50%] after:translate-x-[1rem] after:bg-[#262626] after:text-white after:p-2 after:rounded-md after:opacity-0 after:transition-opacity after:duration-100 after:ease-in-out after:whitespace-nowrap hover:after:opacity-100 after:pointer-events-none">
+      <svg class="fill-neutral-700 hover:fill-blue-500 rotate-0 w-10 h-10 transition-all ease-in-out duration-300"
+        xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path
+          d="M12 1L21.5 6.5V17.5L12 23L2.5 17.5V6.5L12 1ZM12 3.311L4.5 7.65311V16.3469L12 20.689L19.5 16.3469V7.65311L12 3.311ZM12 16C9.79086 16 8 14.2091 8 12C8 9.79086 9.79086 8 12 8C14.2091 8 16 9.79086 16 12C16 14.2091 14.2091 16 12 16ZM12 14C13.1046 14 14 13.1046 14 12C14 10.8954 13.1046 10 12 10C10.8954 10 10 10.8954 10 12C10 13.1046 10.8954 14 12 14Z">
+        </path>
+      </svg>
+    </button>
+    <div id="settings"
+      style="transition: all 0.3s ease-in-out;height: 2rem;width: 3.5rem;padding-bottom: 0;padding-left: 0;padding-right: 0; text-align: left;"
+      class="flex flex-col  overflow-hidden shrink-0 gap-4 pt-14 pointer-events-auto shadow-md p-3 bg-neutral-50 text-neutral-800 border border-neutral-800 rounded-2xl transition-all ease-in-out duration-100">
+      <div id="edit-settings" class="flex flex-col gap-3">
+        <div class="flex flex-col">
+          <label for="edit-mode" class="text-xs sm:text-sm text-neutral-600">Mode</label>
+          <div class="flex flex-row gap-2">
+            <button id="erase-mode"
+              class="group whitespace-nowrap flex flex-row gap-2 text-lg py-1 sm:py-1.5 px-2 sm:px-3 min-w-0 shrink shadow-md hover:shadow-sm text-neutral-800 border border-neutral-800 transition-all duration-100 ease-in-out focus:outline-0 cursor-pointer rounded-md">
+              <svg class="transition-all ease-in-out duration-100" xmlns="http://www.w3.org/2000/svg" height="24px"
+                viewBox="0 0 24 24" width="24px" fill="#262626">
+                <path
+                  d="M13.9999 18.9966H20.9999V20.9966H11.9999L8.00229 20.9991L1.51457 14.5113C1.12405 14.1208 1.12405 13.4877 1.51457 13.0971L12.1212 2.49053C12.5117 2.1 13.1449 2.1 13.5354 2.49053L21.3136 10.2687C21.7041 10.6592 21.7041 11.2924 21.3136 11.6829L13.9999 18.9966ZM15.6567 14.5113L19.1922 10.9758L12.8283 4.61185L9.29275 8.14738L15.6567 14.5113Z">
+                </path>
+              </svg>
+            </button>
+            <button id="paint-mode"
+              class="group whitespace-nowrap flex flex-row gap-2 text-lg py-1 sm:py-1.5 px-2 sm:px-3 min-w-0 shrink shadow-md hover:shadow-sm text-neutral-800 border border-neutral-800 transition-all duration-100 ease-in-out focus:outline-0 cursor-pointer rounded-md">
+              <svg class="transition-all ease-in-out duration-100" xmlns="http://www.w3.org/2000/svg" height="24px"
+                viewBox="0 0 24 24" width="24px" fill="#262626">
+                <path
+                  d="M5 4.9967V7.9967H19V4.9967H5ZM4 2.9967H20C20.5523 2.9967 21 3.44442 21 3.9967V8.9967C21 9.54899 20.5523 9.9967 20 9.9967H4C3.44772 9.9967 3 9.54899 3 8.9967V3.9967C3 3.44442 3.44772 2.9967 4 2.9967ZM6 11.9967H12C12.5523 11.9967 13 12.4444 13 12.9967V15.9967H14V21.9967H10V15.9967H11V13.9967H5C4.44772 13.9967 4 13.549 4 12.9967V10.9967H6V11.9967ZM17.7322 13.7289L19.5 11.9612L21.2678 13.7289C22.2441 14.7052 22.2441 16.2882 21.2678 17.2645C20.2915 18.2408 18.7085 18.2408 17.7322 17.2645C16.7559 16.2882 16.7559 14.7052 17.7322 13.7289Z">
+                </path>
+              </svg>
+            </button>
+            <button id="inpaint-mode"
+              class="group whitespace-nowrap flex flex-row gap-2 text-lg py-1 sm:py-1.5 px-2 sm:px-3 min-w-0 shrink shadow-md hover:shadow-sm text-neutral-800 border border-neutral-800 transition-all duration-100 ease-in-out focus:outline-0 cursor-pointer rounded-md">
+              <svg class="transition-all ease-in-out duration-100" xmlns="http://www.w3.org/2000/svg" height="24px"
+                viewBox="0 0 24 24" width="24px" fill="#262626">
+                <path
+                  d="M4.7134 7.12811L4.46682 7.69379C4.28637 8.10792 3.71357 8.10792 3.53312 7.69379L3.28656 7.12811C2.84706 6.11947 2.05545 5.31641 1.06767 4.87708L0.308047 4.53922C-0.102682 4.35653 -0.102682 3.75881 0.308047 3.57612L1.0252 3.25714C2.03838 2.80651 2.84417 1.97373 3.27612 0.930828L3.52932 0.319534C3.70578 -0.106511 4.29417 -0.106511 4.47063 0.319534L4.72382 0.930828C5.15577 1.97373 5.96158 2.80651 6.9748 3.25714L7.69188 3.57612C8.10271 3.75881 8.10271 4.35653 7.69188 4.53922L6.93228 4.87708C5.94451 5.31641 5.15288 6.11947 4.7134 7.12811ZM15.3144 9.53285L15.4565 9.67491C16.7513 11.018 17.3306 12.9868 16.8126 14.9201C16.1644 17.3393 13.9702 18.9984 11.5016 18.9984C9.46572 18.9984 6.78847 18.3726 4.5286 17.4841C5.73449 16.0696 6.17423 14.675 6.3285 12.805C6.36574 12.3536 6.38901 12.1741 6.43185 12.0142C7.22541 9.05261 10.0168 7.40515 12.9235 8.18399C13.8549 8.43357 14.6661 8.90783 15.3144 9.53285ZM18.2278 2.3713L13.2886 6.21289C9.34224 5.23923 5.55843 7.54646 4.5 11.4966C4.39826 11.8763 4.36647 12.262 4.33317 12.666C4.21829 14.0599 4.08554 15.6707 1 17.9966C3.5 19.4966 8 20.9984 11.5016 20.9984C14.8142 20.9984 17.8463 18.7896 18.7444 15.4377C19.0836 14.1719 19.0778 12.895 18.7847 11.7067L22.6253 6.76879C22.9349 6.3707 22.8997 5.80435 22.543 5.44774L19.5488 2.45355C19.1922 2.09694 18.6259 2.06168 18.2278 2.3713ZM16.8952 8.2852C16.8319 8.21952 16.7673 8.15494 16.7015 8.09149L15.5769 6.96685L18.7589 4.49198L20.5046 6.23774L18.0297 9.41972L16.8952 8.2852Z">
+                </path>
+              </svg>
+            </button>
+            <button id="add-mode"
+              class="group whitespace-nowrap flex flex-row gap-2 text-lg py-1 sm:py-1.5 px-2 sm:px-3 min-w-0 shrink shadow-md hover:shadow-sm text-neutral-800 border border-neutral-800 transition-all duration-100 ease-in-out focus:outline-0 cursor-pointer rounded-md">
+              <svg class="transition-all ease-in-out duration-100" xmlns="http://www.w3.org/2000/svg" height="24px"
+                viewBox="0 0 24 24" width="24px" fill="#262626">
+                <path d="M10 6V21H8V6H2V4H16V6H10ZM18 14V21H16V14H13V12H21V14H18Z">
+                </path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div id="erase-settings" class="flex flex-col gap-3">
+          <h2 class="text-base sm:text-lg font-medium whitespace-nowrap text-neutral-800">
+            Erase text and background
+          </h2>
+          <div class="flex flex-col w-full gap-1">
+            <label for="erase-brush-size"
+              class="text-xs sm:text-sm whitespace-nowrap text-neutral-600 flex flex-row gap-2">
+              Brush size
+              <span id="erase-brush-size-value" class="text-neutral-800 text-xs sm:text-sm">90px</span>
+            </label>
+            <input
+              class="accent-blue-400 hover:accent-blue-500 focus:accent-blue-500 appearance-none cursor-pointer bg-white border border-neutral-600 h-[5px] rounded-full"
+              type="range" min="10" max="300" value="90" name="Font size" id="erase-brush-size">
+          </div>
+        </div>
+        <div id="paint-settings" class="flex flex-col gap-3">
+          <h2 class="text-base sm:text-lg font-medium whitespace-nowrap text-neutral-800">
+            Paint with color
+          </h2>
+          <div class="flex flex-col w-full gap-1">
+            <label for="paint-brush-size"
+              class="text-xs sm:text-sm whitespace-nowrap text-neutral-600 flex flex-row gap-2">
+              Brush size
+              <span id="paint-brush-size-value" class="text-neutral-800 text-xs sm:text-sm">90px</span>
+            </label>
+            <input
+              class="accent-blue-400 hover:accent-blue-500 focus:accent-blue-500 appearance-none cursor-pointer bg-white border border-neutral-600 h-[5px] rounded-full"
+              type="range" min="10" max="300" value="90" name="Font size" id="paint-brush-size">
+          </div>
+          <div class="flex flex-col">
+            <label for="paint-color" class="text-xs sm:text-sm text-neutral-600">
+              Color
+            </label>
+            <input type="color"
+              class="hover:border-b-2 border-blue-300 cursor-pointer w-10 h-8 -mt-1 -ml-0.5 border-none bg-transparent"
+              name="Paint color" id="paint-color" value="#ffffff">
+          </div>
+        </div>
+        <div id="inpaint-settings" class="flex flex-col gap-3">
+          <h2 class="text-base sm:text-lg font-medium whitespace-nowrap text-neutral-800">
+            Remove text with AI inpaint
+          </h2>
+          <div class="flex flex-col w-full gap-1">
+            <label for="inpaint-brush-size"
+              class="text-xs sm:text-sm whitespace-nowrap text-neutral-600 flex flex-row gap-2">
+              Brush size
+              <span id="inpaint-brush-size-value" class="text-neutral-800 text-xs sm:text-sm">90px</span>
+            </label>
+            <input
+              class="accent-blue-400 hover:accent-blue-500 focus:accent-blue-500 appearance-none cursor-pointer bg-white border border-neutral-600 h-[5px] rounded-full"
+              type="range" min="10" max="300" value="90" name="Font size" id="inpaint-brush-size">
+          </div>
+        </div>
+        <div id="add-settings" class="flex flex-col gap-3">
+          <h2 class="text-base sm:text-lg font-medium whitespace-nowrap text-neutral-800">
+            Edit, move, remove or add text
+          </h2>
+          <div class="flex flex-col">
+            <label for="add-font-select" class="text-xs sm:text-sm text-neutral-600">
+              Font family
+            </label>
+            <div class="flex">
+              <select name="Font" id="add-font-select"
+                class="text-base sm:text-lg py-1 sm:py-1.5 px-2 sm:px-3 min-w-0 shrink bg-white shadow-sm hover:shadow-xs text-neutral-800 border border-neutral-800 transition-all duration-100 ease-in-out focus:outline-0 cursor-pointer rounded-md">
+                <option class="notosans"
+                  title="Afrikaans, Albanian, Amharic, Arabic, Armenian, Assamese, Aymara, Azerbaijani, Bambara, Basque, Belarusian, Bengali, Bhojpuri, Bosnian, Bulgarian, Catalan, Cebuano, Chichewa, Chinese, Corsican, Croatian, Czech, Danish, Divehi, Dogri, Dutch, English, Esperanto, Estonian, Ewe, Filipino, Finnish, French, Frisian, Galician, Ganda, Georgian, German, Greek, Guarani, Gujarati, Haitian Creole, Hausa, Hawaiian, Hebrew, Hindi, Hmong, Hungarian, Icelandic, Igbo, Iloko, Indonesian, Irish Gaelic, Italian, Japanese, Javanese, Kannada, Kazakh, Khmer, Kinyarwanda, Konkani, Korean, Krio, Kurmanji, Sorani, Kyrgyz, Lao, Latin, Latvian, Lingala, Lithuanian, Luxembourgish, Macedonian, Maithili, Malagasy, Malay, Malayalam, Maltese, Maori, Marathi, Mizo, Mongolian, Burmese, Nepali, Northern Sotho, Norwegian, Odia, Oromo, Pashto, Persian, Polish, Portuguese, Punjabi, Quechua, Romanian, Russian, Samoan, Sanskrit, Scots Gaelic, Serbian, Sesotho, Shona, Sindhi, Sinhala, Slovak, Slovenian, Somali, Spanish, Sundanese, Swahili, Swedish, Tajik, Tamil, Tatar, Telugu, Thai, Tigrinya, Tsonga, Turkish, Turkmen, Twi, Ukrainian, Urdu, Uyghur, Uzbek, Vietnamese, Welsh, Xhosa, Yiddish, Yoruba, Zulu"
+                  value="NotoSans">NotoSans - 130 languages
+                </option>
+                <option class="wildwords"
+                  title="Belarusian, Bosnian, Bulgarian, Macedonian, Russian, Serbian, Greek, Afrikaans, Albanian, Basque, Catalan, Croatian, Czech, Danish, Dutch, English, Esperanto, Estonian, Filipino, Finnish, French, Galician, Ganda, German, Hungarian, Icelandic, Indonesian, Irish, Italian, Kinyarwanda, Latvian, Lithuanian, Luxembourgish, Malagasy, Maltese, Norwegian, Norwegian, Oromo, Polish, Portuguese, Quechua, Romanian, Scots Gaelic, Serbian, Shona, Slovak, Slovenian, Somali, Spanish, Swahili, Swedish, Turkish, Uzbek, Vietnamese, Welsh, Western Frisian, Yoruba, Zulu"
+                  value="WildWords">WildWords - 60 languages
+                </option>
+                <option class="komika"
+                  title="Afrikaans, Albanian, Basque, Catalan, Danish, Dutch, English, Filipino, French, Galician, German, Icelandic, Indonesian, Irish, Italian, Kinyarwanda, Luxembourgish, Malagasy, Norwegian, Norwegian, Oromo, Portuguese, Quechua, Scots Gaelic, Shona, Somali, Spanish, Swahili, Swedish, Uzbek, Zulu"
+                  value="KomikaJam">KomikaJam - 30 languages
+                </option>
+                <option class="bangers"
+                  title="Afrikaans, Albanian, Basque, Catalan, Croatian, Czech, Danish, Dutch, English, Esperanto, Estonian, Filipino, Finnish, French, Galician, Ganda, German, Hungarian, Icelandic, Indonesian, Irish, Italian, Kinyarwanda, Latvian, Lithuanian, Luxembourgish, Malagasy, Maltese, Norwegian, Norwegian, Oromo, Polish, Portuguese, Quechua, Romanian, Scots Gaelic, Serbian, Shona, Slovak, Slovenian, Somali, Spanish, Swahili, Swedish, Turkish, Uzbek, Vietnamese, Welsh, Western Frisian, Zulu"
+                  value="Bangers">Bangers - 50 languages
+                </option>
+                <option class="edo" value="Edo">Edo - English only
+                </option>
+                <option class="ridi"
+                  title="Russian, Afrikaans, Albanian, Basque, Catalan, Croatian, Czech, Danish, Dutch, English, Esperanto, Estonian, Filipino, Finnish, French, Galician, Ganda, German, Hungarian, Icelandic, Indonesian, Irish, Italian, Kinyarwanda, Korean, Latvian, Lithuanian, Luxembourgish, Malagasy, Maltese, Norwegian, Oromo, Polish, Portuguese, Quechua, Romanian, Serbian, Shona, Slovak, Slovenian, Somali, Spanish, Swahili, Swedish, Turkish, Uzbek, Welsh, Zulu"
+                  value="RIDIBatang">RIDIBatang - 50 languages
+                </option>
+                <option class="bushidoo"
+                  title="Afrikaans, Albanian, Basque, Croatian, Czech, Danish, Dutch, English, Estonian, Filipino, Finnish, French, Galician, German, Hungarian, Icelandic, Indonesian, Irish, Italian, Kinyarwanda, Luxembourgish, Malagasy, Norwegian Bokmål, Norwegian Nynorsk, Oromo, Portuguese, Quechua, Serbian, Shona, Slovak, Slovenian, Somali, Spanish, Swahili, Swedish, Uzbek (Latin), Zulu"
+                  value="Bushidoo">Bushidoo - 40 languages
+                </option>
+                <option class="hayah"
+                  title="Arabic, Persian, Afrikaans, Albanian, Basque, Catalan, Danish, Dutch, English, Estonian, Filipino, Finnish, Galician, German, Icelandic, Indonesian, Irish Gaelic, Italian, Kinyarwanda, Luxembourgish, Malagasy, Oromo, Portuguese, Quechua, Shona, Somali, Spanish, Swahili, Swedish, Scots Gaelic, Uzbek, Zulu"
+                  value="Hayah">Hayah - 30 languages
+                </option>
+                <option class="itim"
+                  title="Afrikaans, Albanian, Basque, Catalan, Danish, Dutch, English, Esperanto, Estonian, Faroese, Filipino, Finnish, French, Galician, German, Hawaiian, Hungarian, Icelandic, Igbo, Indonesian, Irish Gaelic, Italian, Kinyarwanda, Latvian, Lithuanian, Luxembourgish, Malagasy, Maltese, Oromo, Polish, Portuguese, Romanian, Quechua, Shona, Slovak, Slovenian, Somali, Spanish, Swahili, Swedish, Turkish, Uzbek, Vietnamese, Welsh, Yoruba, Zulu, Thai"
+                  value="Itim">Itim - 50 languages
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="flex flex-row gap-2">
+            <div class="flex flex-col w-1/2 gap-1">
+              <label for="add-font-size"
+                class="text-xs sm:text-sm whitespace-nowrap text-neutral-600 flex flex-row gap-2">
+                Font size
+                <span id="add-font-size-value" class="text-neutral-800 text-xs sm:text-sm">24px</span>
+              </label>
+              <input
+                class="accent-blue-400 hover:accent-blue-500 focus:accent-blue-500 appearance-none cursor-pointer bg-white border border-neutral-600 h-[5px] rounded-full"
+                type="range" min="5" max="100" value="24" name="Font size" id="add-font-size">
+            </div>
+            <div class="flex flex-col w-1/2 gap-1">
+              <label for="add-stroke-size"
+                class="text-xs sm:text-sm whitespace-nowrap text-neutral-600 flex flex-row gap-2">
+                Stroke size
+                <span id="add-stroke-size-value" class="text-neutral-800 text-xs sm:text-sm">6px</span>
+              </label>
+              <input
+                class="accent-blue-400 hover:accent-blue-500 focus:accent-blue-500 appearance-none cursor-pointer bg-white border border-neutral-600 h-[5px] rounded-full"
+                type="range" min="0" max="20" value="6" name="Stroke size" id="add-stroke-size">
+            </div>
+          </div>
+          <div class="flex flex-row gap-2">
+            <div class="flex flex-row gap-2 w-1/2">
+              <div class="flex flex-col w-full gap-1">
+                <label for="add-border-radius"
+                  class="text-xs sm:text-sm whitespace-nowrap text-neutral-600 flex flex-row gap-2">
+                  Border radius
+                  <span id="add-border-radius-value" class="text-neutral-800 text-xs sm:text-sm">0px</span>
+                </label>
+                <input
+                  class="accent-blue-400 hover:accent-blue-500 focus:accent-blue-500 appearance-none cursor-pointer bg-white border border-neutral-600 h-[5px] rounded-full"
+                  type="range" min="0" max="200" value="0" name="Border radius" id="add-border-radius">
+              </div>
+            </div>
+            <div class="flex flex-row gap-2 w-1/2">
+              <div class="flex flex-col w-full gap-1">
+                <label for="add-border-padding"
+                  class="text-xs sm:text-sm whitespace-nowrap text-neutral-600 flex flex-row gap-2">
+                  Border padding
+                  <span id="add-border-padding-value" class="text-neutral-800 text-xs sm:text-sm">0px</span>
+                </label>
+                <input
+                  class="accent-blue-400 hover:accent-blue-500 focus:accent-blue-500 appearance-none cursor-pointer bg-white border border-neutral-600 h-[5px] rounded-full"
+                  type="range" min="0" max="100" value="0" name="Border padding" id="add-border-padding">
+              </div>
+            </div>
+          </div>
+          <div class="flex flex-row gap-2">
+            <div class="flex flex-col">
+              <label for="colors" class="text-xs sm:text-sm text-neutral-600">Colors</label>
+              <div id="colors"
+                class="flex flex-row justify-between gap-1 bg-white shadow-sm hover:shadow-xs text-neutral-800 border border-neutral-800 px-1 sm:px-2 py-0.5 sm:py-1 rounded-md w-full sm:w-fit">
+                <div class="flex flex-col">
+                  <label for="add-text-color" class="text-[0.65rem] sm:text-xs text-neutral-600 -mb-1.5 ml-0.5">
+                    Text
+                  </label>
+                  <input type="color"
+                    class="hover:border-b-2 border-blue-300 cursor-pointer w-9 lg:w-10 h-8 px-[2px] py-[4px] border-none bg-transparent"
+                    name="Text color" id="add-text-color" value="#000000">
+                </div>
+                <div class="flex flex-col">
+                  <label for="add-stroke-color" class="text-[0.65rem] sm:text-xs text-neutral-600 -mb-1.5 ml-0.5">
+                    Stroke
+                  </label>
+                  <input type="color"
+                    class="hover:border-b-2 border-blue-300 cursor-pointer w-9 lg:w-10 h-8 px-[2px] py-[4px] border-none bg-transparent"
+                    name="Stroke color" id="add-stroke-color" value="#ffffff">
+                </div>
+                <div class="flex flex-col">
+                  <label for="add-bg-color" class="text-[0.65rem] sm:text-xs text-neutral-600 -mb-1.5 ml-0.5">
+                    BG
+                  </label>
+                  <input type="color"
+                    class="hover:border-b-2 border-blue-300 cursor-pointer w-9 lg:w-10 h-8 px-[2px] py-[4px] border-none bg-transparent"
+                    name="Background color" id="add-bg-color" value="#ffffff">
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-col w-full h-full">
+              <label for="alignment" class="text-xs sm:text-sm text-neutral-600">Text
+                align</label>
+              <div id="alignment"
+                class="flex flex-row overflow-hidden bg-white items-center shadow-sm hover:shadow-xs text-neutral-800 border border-neutral-800 rounded-md h-full w-full">
+                <button id="add-align-left"
+                  class="flex flex-1 p-1 transition-all ease-in-out duration-100 hover:bg-blue-300 cursor-pointer border-r border-neutral-400 items-center justify-center w-full h-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="#262626">
+                    <path d="M3 4H21V6H3V4ZM3 19H17V21H3V19ZM3 14H21V16H3V14ZM3 9H17V11H3V9Z">
+                    </path>
+                  </svg>
+                </button>
+                <button id="add-align-center"
+                  class="flex flex-1 p-1 transition-all ease-in-out duration-100 hover:bg-blue-300 cursor-pointer border-r border-neutral-400 items-center justify-center w-full h-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="#262626">
+                    <path d="M3 4H21V6H3V4ZM5 19H19V21H5V19ZM3 14H21V16H3V14ZM5 9H19V11H5V9Z">
+                    </path>
+                  </svg>
+                </button>
+                <button id="add-align-right"
+                  class="flex flex-1 p-1 transition-all ease-in-out duration-100 hover:bg-blue-300 cursor-pointer items-center justify-center w-full h-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="#262626">
+                    <path d="M3 4H21V6H3V4ZM7 19H21V21H7V19ZM3 14H21V16H3V14ZM7 9H21V11H7V9Z">
+                    </path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="sm:pt-1 flex flex-row gap-4">
+            <label class="relative flex items-center cursor-pointer">
+              <input id="add-font-bg" type="checkbox" checked value="" class="sr-only peer">
+              <div
+                class="px-6 py-3 focus:outline-none focus:ring-0 rounded-full bg-neutral-400 hover:bg-neutral-500 after:translate-x-0 peer-checked:after:translate-x-full peer-checked:after:scale-[85%] peer-checked:after:border-white after:content-[''] after:absolute after:top-1/2 after:-translate-y-1/2 after:left-0 after:bg-white after:border-gray-300 after:scale-[85%] after:rounded-full after:h-6 after:aspect-square after:transition-all after:duration-100 after:ease-in-out duration-100 ease-in-out transition-all peer-checked:bg-blue-400 peer-checked:hover:bg-blue-500">
+              </div>
+              <span class="ml-3 text-base sm:text-lg text-neutral-800">Background</span>
+            </label>
+            <label class="relative flex items-center cursor-pointer">
+              <input id="add-font-border" type="checkbox" value="" class="sr-only peer">
+              <div
+                class="px-6 py-3 focus:outline-none focus:ring-0 rounded-full bg-neutral-400 hover:bg-neutral-500 after:translate-x-0 peer-checked:after:translate-x-full peer-checked:after:scale-[85%] peer-checked:after:border-white after:content-[''] after:absolute after:top-1/2 after:-translate-y-1/2 after:left-0 after:bg-white after:border-gray-300 after:scale-[85%] after:rounded-full after:h-6 after:aspect-square after:transition-all after:duration-100 after:ease-in-out duration-100 ease-in-out transition-all peer-checked:bg-blue-400 peer-checked:hover:bg-blue-500">
+              </div>
+              <span class="ml-3 text-base sm:text-lg text-neutral-800">Border</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="edit-actions"
+      class="flex flex-wrap shrink min-h-0 flex-col gap-1 pt-1 sm:gap-2 sm:pt-2  pointer-events-auto">
+      <button id="remove-text"
+        class="group relative flex items-center justify-center text-lg shadow-md p-2.5 bg-neutral-50 hover:shadow-sm text-neutral-800 border border-neutral-800 transition-all duration-100 ease-in-out focus:outline-0 cursor-pointer rounded-full after:content-['Delete_selected_text'] after:absolute after:top-1/2 after:left-full after:translate-y-[-50%] after:translate-x-[0.5rem] after:bg-[#262626] after:text-white after:p-2 after:rounded-md after:opacity-0 after:transition-opacity after:duration-100 after:ease-in-out after:whitespace-nowrap hover:after:opacity-100 after:pointer-events-none after:z-20">
+        <svg class="h-5 w-5 sm:h-6 sm:w-6 transition-all ease-in-out duration-100" xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24" fill="#262626">
+          <path
+            d="M7 4V2H17V4H22V6H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V6H2V4H7ZM6 6V20H18V6H6ZM9 9H11V17H9V9ZM13 9H15V17H13V9Z">
+          </path>
+        </svg>
+      </button>
+      <button id="copy-text"
+        class="group relative flex items-center justify-center text-lg shadow-md p-2.5 bg-neutral-50 hover:shadow-sm text-neutral-800 border border-neutral-800 transition-all duration-100 ease-in-out focus:outline-0 cursor-pointer rounded-full after:content-['Save_texts_to_file'] after:absolute after:top-1/2 after:left-full after:translate-y-[-50%] after:translate-x-[0.5rem] after:bg-[#262626] after:text-white after:p-2 after:rounded-md after:opacity-0 after:transition-opacity after:duration-100 after:ease-in-out after:whitespace-nowrap hover:after:opacity-100 after:pointer-events-none after:z-20">
+        <svg class="h-5 w-5 sm:h-6 sm:w-6 transition-all ease-in-out duration-100" xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24" fill="#262626">
+          <path
+            d="M6.9998 6V3C6.9998 2.44772 7.44752 2 7.9998 2H19.9998C20.5521 2 20.9998 2.44772 20.9998 3V17C20.9998 17.5523 20.5521 18 19.9998 18H16.9998V20.9991C16.9998 21.5519 16.5499 22 15.993 22H4.00666C3.45059 22 3 21.5554 3 20.9991L3.0026 7.00087C3.0027 6.44811 3.45264 6 4.00942 6H6.9998ZM5.00242 8L5.00019 20H14.9998V8H5.00242ZM8.9998 6H16.9998V16H18.9998V4H8.9998V6ZM7 11H13V13H7V11ZM7 15H13V17H7V15Z">
+          </path>
+        </svg>
+      </button>
+      <button id="flip-image"
+        class="group relative flex items-center justify-center text-lg shadow-md p-2.5 bg-neutral-50 hover:shadow-sm text-neutral-800 border border-neutral-800 transition-all duration-100 ease-in-out focus:outline-0 cursor-pointer rounded-full after:content-['Show_original/translated_image_(Ctrl+X)'] after:absolute after:top-1/2 after:left-full after:translate-y-[-50%] after:translate-x-[0.5rem] after:bg-[#262626] after:text-white after:p-2 after:rounded-md after:opacity-0 after:transition-opacity after:duration-100 after:ease-in-out after:whitespace-nowrap hover:after:opacity-100 after:pointer-events-none after:z-20">
+        <svg class="h-5 w-5 sm:h-6 sm:w-6 transition-all ease-in-out duration-100" xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24" fill="#262626">
+          <path
+            d="M11 2V22H13V2H11ZM2 6C2 4.89543 2.89543 4 4 4H7C8.10457 4 9 4.89543 9 6V18C9 19.1046 8.10457 20 7 20H4C2.89543 20 2 19.1046 2 18V6ZM20 6V18H17V6H20ZM17 4C15.8954 4 15 4.89543 15 6V18C15 19.1046 15.8954 20 17 20H20C21.1046 20 22 19.1046 22 18V6C22 4.89543 21.1046 4 20 4H17Z">
+          </path>
+        </svg>
+      </button>
+      <button id="undo-edit"
+        class="group relative flex items-center justify-center text-lg shadow-md p-2.5 bg-neutral-50 hover:shadow-sm text-neutral-800 border border-neutral-800 transition-all duration-100 ease-in-out focus:outline-0 cursor-pointer rounded-full after:content-['Undo_edit_(Ctrl+Z)'] after:absolute after:top-1/2 after:left-full after:translate-y-[-50%] after:translate-x-[0.5rem] after:bg-neutral-800 after:text-white after:p-2 after:rounded-md after:opacity-0 after:transition-opacity after:duration-100 after:ease-in-out after:whitespace-nowrap hover:after:opacity-100 after:pointer-events-none after:z-20">
+        <svg class="h-5 w-5 sm:h-6 sm:w-6 transition-all ease-in-out duration-100" xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24" fill="#262626">
+          <path
+            d="M5.82843 6.99955L8.36396 9.53509L6.94975 10.9493L2 5.99955L6.94975 1.0498L8.36396 2.46402L5.82843 4.99955H13C17.4183 4.99955 21 8.58127 21 12.9996C21 17.4178 17.4183 20.9996 13 20.9996H4V18.9996H13C16.3137 18.9996 19 16.3133 19 12.9996C19 9.68584 16.3137 6.99955 13 6.99955H5.82843Z">
+          </path>
+        </svg>
+      </button>
+      <button id="accept-edit"
+        class="group relative flex items-center justify-center text-lg shadow-md p-2.5 bg-neutral-50 hover:shadow-sm text-neutral-800 border border-neutral-800 transition-all duration-100 ease-in-out focus:outline-0 cursor-pointer rounded-full after:content-['Accept_edit'] after:absolute after:top-1/2 after:left-full after:translate-y-[-50%] after:translate-x-[0.5rem] after:bg-[#262626] after:text-white after:p-2 after:rounded-md after:opacity-0 after:transition-opacity after:duration-100 after:ease-in-out after:whitespace-nowrap hover:after:opacity-100 after:pointer-events-none after:z-20">
+        <svg class="h-5 w-5 sm:h-6 sm:w-6 transition-all ease-in-out duration-100" xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24" fill="#262626">
+          <path
+            d="M9.9997 15.1709L19.1921 5.97852L20.6063 7.39273L9.9997 17.9993L3.63574 11.6354L5.04996 10.2212L9.9997 15.1709Z">
+          </path>
+        </svg>
+      </button>
+      <button id="cancel-edit"
+        class="group relative flex items-center justify-center text-lg shadow-md p-2.5 bg-neutral-50 hover:shadow-sm text-neutral-800 border border-neutral-800 transition-all duration-100 ease-in-out focus:outline-0 cursor-pointer rounded-full after:content-['Cancel_edit'] after:absolute after:top-1/2 after:left-full after:translate-y-[-50%] after:translate-x-[0.5rem] after:bg-[#262626] after:text-white after:p-2 after:rounded-md after:opacity-0 after:transition-opacity after:duration-100 after:ease-in-out after:whitespace-nowrap hover:after:opacity-100 after:pointer-events-none after:z-20">
+        <svg class="h-5 w-5 sm:h-6 sm:w-6 transition-all ease-in-out duration-100" xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24" fill="#262626">
+          <path
+            d="M11.9997 10.5865L16.9495 5.63672L18.3637 7.05093L13.4139 12.0007L18.3637 16.9504L16.9495 18.3646L11.9997 13.4149L7.04996 18.3646L5.63574 16.9504L10.5855 12.0007L5.63574 7.05093L7.04996 5.63672L11.9997 10.5865Z">
+          </path>
+        </svg>
+      </button>
+    </div>
+  </div>
+  <div id="canvas-wrapper" class="relative rounded-xl shadow-lg h-full w-full p-1 overflow-hidden">
+    <div style="justify-content: safe center; align-items: safe center;" id="canvas-container"
+      class="relative flex overflow-auto p-2 sm:p-4 w-full h-full">
+      <canvas id="working-canvas" class="block"></canvas>
+      <canvas id="hidden-canvas" class="hidden"></canvas>
+      <canvas id="mask-canvas" class="hidden"></canvas>
+    </div>
+    <div id="canvas-cursor" class="absolute pointer-events-none z-40 rounded-full opacity-0 border-2 border-blue-500">
+    </div>
+    <button id="zoom" draggable="false"
+      class="group absolute bottom-8 right-8 z-40 flex items-center justify-center shadow-md p-2.5 bg-neutral-50 hover:shadow-sm text-neutral-800 border border-neutral-800 transition-all duration-100 ease-in-out focus:outline-0 cursor-pointer rounded-full after:content-['Zoom_(Ctrl+Scroll)'] after:absolute after:top-1/2 after:left-full after:translate-y-[-50%] after:-translate-x-52 after:bg-[#262626] after:text-white after:p-2 after:rounded-md after:opacity-0 after:transition-opacity after:duration-100 after:ease-in-out after:whitespace-nowrap hover:after:opacity-100 after:pointer-events-none">
+      <svg class="h-6 w-6 transition-all ease-in-out duration-100" xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24" fill="#262626">
+        <path
+          d="M18.031 16.6168L22.3137 20.8995L20.8995 22.3137L16.6168 18.031C15.0769 19.263 13.124 20 11 20C6.032 20 2 15.968 2 11C2 6.032 6.032 2 11 2C15.968 2 20 6.032 20 11C20 13.124 19.263 15.0769 18.031 16.6168ZM16.0247 15.8748C17.2475 14.6146 18 12.8956 18 11C18 7.1325 14.8675 4 11 4C7.1325 4 4 7.1325 4 11C4 14.8675 7.1325 18 11 18C12.8956 18 14.6146 17.2475 15.8748 16.0247L16.0247 15.8748ZM10 10V7H12V10H15V12H12V15H10V12H7V10H10Z">
+        </path>
+      </svg>
+      <div draggable="false"
+        class="hidden group-hover:block hover:block absolute -rotate-90 -translate-y-[115%] top-0 p-2.5 z-50 rounded-full bg-neutral-50 border border-neutral-800 shadow-md hover:shadow-sm">
+        <input class="translate-y-0.5 cursor-pointer w-[130px]" type="range" min="-40" max="100" value="0" name="Zoom"
+          id="zoom-slider">
+      </div>
+    </button>
+  </div>
+</div>
